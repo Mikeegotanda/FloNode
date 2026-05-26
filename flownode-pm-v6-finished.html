@@ -1,0 +1,2959 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowNode — Production OS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      colors: {
+        ink: {
+          950: '#06050B',
+          900: '#0A0912',
+          800: '#0F0E1A',
+          700: '#161425',
+          600: '#1D1B2E',
+          500: '#252238',
+          400: '#2F2C45',
+        },
+        neon: {
+          purple: '#A78BFA',
+          violet: '#8B5CF6',
+          blue: '#3B82F6',
+          cyan: '#06B6D4',
+          green: '#10B981',
+          mint: '#34D399',
+          amber: '#F59E0B',
+          pink: '#EC4899',
+          red: '#EF4444',
+        }
+      },
+      borderRadius: {
+        '2xl': '1.25rem',
+        '3xl': '1.75rem',
+      },
+      animation: {
+        'pulse-slow': 'pulse 3s ease-in-out infinite',
+        'dash-flow': 'dash-flow 1.2s linear infinite',
+        'glow-pulse': 'glow-pulse 2.5s ease-in-out infinite',
+        'ring-pulse': 'ring-pulse 2.5s ease-out infinite',
+        'fade-up': 'fade-up 0.5s ease-out forwards',
+      },
+      keyframes: {
+        'dash-flow': {
+          'to': { 'stroke-dashoffset': '-20' }
+        },
+        'glow-pulse': {
+          '0%, 100%': { 'box-shadow': '0 0 12px rgba(167, 139, 250, 0.4)' },
+          '50%': { 'box-shadow': '0 0 28px rgba(167, 139, 250, 0.7)' }
+        },
+        'ring-pulse': {
+          '0%': { transform: 'translate(-50%, -50%) scale(0.6)', opacity: '0.8' },
+          '100%': { transform: 'translate(-50%, -50%) scale(3)', opacity: '0' }
+        },
+        'fade-up': {
+          'from': { opacity: '0', transform: 'translateY(8px)' },
+          'to': { opacity: '1', transform: 'translateY(0)' }
+        }
+      }
+    }
+  }
+}
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#06050B;color:#F4F2F8;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
+html.dark body{background:#191919;color:#F4F2F0}
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
+
+/* GLOBAL TEXTURED BACKGROUND */
+.bg-cosmos{
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%,rgba(139,92,246,0.07) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 100%,rgba(59,130,246,0.05) 0%,transparent 50%),
+    #191919;
+}
+.grid-overlay{
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);
+  background-size:48px 48px;
+  background-position:center center;
+}
+
+/* GLASS */
+.glass{
+  background:linear-gradient(145deg,rgba(29,27,46,0.7) 0%,rgba(15,14,26,0.85) 100%);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.06);
+}
+.glass-strong{
+  background:linear-gradient(145deg,rgba(37,34,56,0.85) 0%,rgba(22,20,37,0.95) 100%);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,0.08);
+}
+.glass-glow{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 8px 32px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(255,255,255,0.03);
+}
+
+/* NEON GLOWS */
+.glow-purple{box-shadow:0 0 24px rgba(167,139,250,0.35),0 0 60px rgba(139,92,246,0.15)}
+.glow-blue{box-shadow:0 0 24px rgba(59,130,246,0.35),0 0 60px rgba(59,130,246,0.15)}
+.glow-green{box-shadow:0 0 24px rgba(16,185,129,0.35),0 0 60px rgba(16,185,129,0.15)}
+.glow-amber{box-shadow:0 0 24px rgba(245,158,11,0.35)}
+.glow-pink{box-shadow:0 0 24px rgba(236,72,153,0.35)}
+
+/* TEXT GRADIENTS */
+.text-gradient-purple{
+  background:linear-gradient(135deg,#C4B5FD 0%,#8B5CF6 50%,#7C3AED 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.text-gradient-mix{
+  background:linear-gradient(135deg,#A78BFA 0%,#3B82F6 50%,#10B981 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* HOVER LIFT */
+.lift{transition:transform 0.2s ease,box-shadow 0.2s ease,border-color 0.2s ease}
+.lift:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,0.5);border-color:rgba(255,255,255,0.12)}
+
+/* RADIAL GAUGE BACKGROUND */
+.gauge-track{stroke:rgba(255,255,255,0.04)}
+.gauge-progress{
+  stroke:url(#progress-gradient);
+  filter:drop-shadow(0 0 6px rgba(139,92,246,0.6));
+}
+
+/* RING PULSE for offices */
+.ring-pulse-anim{animation:ring-pulse 2.5s ease-out infinite;position:absolute;top:50%;left:50%;border-radius:50%}
+@keyframes ring-pulse{0%{transform:translate(-50%,-50%) scale(0.6);opacity:0.8}100%{transform:translate(-50%,-50%) scale(3);opacity:0}}
+
+/* DASH FLOW */
+@keyframes dash-flow{to{stroke-dashoffset:-20}}
+.dash-flow{animation:dash-flow 1.2s linear infinite}
+
+/* PULSE DOT */
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 4px currentColor}50%{box-shadow:0 0 14px currentColor,0 0 24px currentColor}}
+.pulse-dot{animation:pulse-dot 1.6s ease-in-out infinite}
+
+/* GLOW PULSE on selected node */
+@keyframes glow-purple-pulse{
+  0%,100%{box-shadow:0 0 0 1px #A78BFA,0 0 20px rgba(167,139,250,0.4),0 8px 32px rgba(0,0,0,0.4)}
+  50%{box-shadow:0 0 0 1px #C4B5FD,0 0 40px rgba(167,139,250,0.7),0 8px 32px rgba(0,0,0,0.4)}
+}
+.node-active{animation:glow-purple-pulse 2.4s ease-in-out infinite}
+
+/* DETAIL PANEL slide */
+.panel-slide{transform:translateX(100%);transition:transform 0.28s cubic-bezier(0.4,0,0.2,1)}
+.panel-slide.open{transform:translateX(0)}
+
+/* SCROLLBAR for canvas */
+.canvas-scroll::-webkit-scrollbar{width:8px;height:8px}
+
+/* Gradient borders */
+.gradient-border{
+  position:relative;
+  background:#161425;
+}
+.gradient-border::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;
+  background:linear-gradient(135deg,rgba(167,139,250,0.4),rgba(59,130,246,0.2),rgba(16,185,129,0.1));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  pointer-events:none;
+}
+
+/* Active sidebar indicator */
+.sb-indicator{
+  position:absolute;left:-14px;top:50%;transform:translateY(-50%);
+  width:3px;height:20px;border-radius:0 3px 3px 0;
+  background:linear-gradient(180deg,#A78BFA,#7C3AED);
+  box-shadow:0 0 12px rgba(167,139,250,0.6);
+}
+
+/* Calendar event glow */
+.cal-event-glow{box-shadow:0 0 8px currentColor}
+
+/* Map dot inner glow */
+.map-pulse-ring{position:absolute;top:50%;left:50%;border-radius:50%;animation:ring-pulse 2.5s ease-out infinite;pointer-events:none}
+
+/* Loading shimmer */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.shimmer{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.05),transparent);background-size:200% 100%;animation:shimmer 2s infinite}
+
+/* Workflow region container in canvas */
+.workflow-region{
+  position:absolute;
+  border:1px dashed var(--section-color,rgba(255,255,255,0.12));
+  border-radius:24px;
+  pointer-events:auto;
+  transition:height .25s ease,width .25s ease,box-shadow .2s ease,border-color .2s ease,opacity .2s ease;
+  background:linear-gradient(145deg,rgba(255,255,255,0.025),rgba(255,255,255,0.01));
+}
+.workflow-region:hover{box-shadow:0 0 32px color-mix(in srgb,var(--section-color,#A78BFA) 18%,transparent)}
+.workflow-region-label{
+  display:none;
+}
+.workflow-section-header{
+  position:absolute;left:16px;right:16px;top:12px;min-height:48px;
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:16px;
+  background:linear-gradient(145deg,rgba(29,27,46,.82),rgba(15,14,26,.9));
+  border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(18px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 28px rgba(0,0,0,.28);
+  cursor:grab;pointer-events:auto;
+}
+.workflow-section-icon{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--section-color,#A78BFA) 24%,transparent);box-shadow:0 0 18px color-mix(in srgb,var(--section-color,#A78BFA) 32%,transparent)}
+.workflow-section-title{font-size:13px;font-weight:800;outline:none;line-height:1.1}
+.workflow-section-sub{font-size:10px;color:rgba(255,255,255,.42);outline:none;margin-top:2px}
+.workflow-section-meta{font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:800;color:rgba(255,255,255,.52)}
+.workflow-section-progress{width:58px;height:4px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.workflow-section-progress span{display:block;height:100%;width:var(--section-progress,60%);background:var(--section-color,#A78BFA)}
+.workflow-section-btn{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.62);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);font-size:13px;transition:.15s}
+.workflow-section-btn:hover{color:white;background:color-mix(in srgb,var(--section-color,#A78BFA) 18%,transparent)}
+.workflow-section-color{width:26px;height:26px;border:0;background:transparent;padding:0;cursor:pointer}
+.workflow-region.collapsed{height:78px!important;opacity:.86}
+.workflow-region.collapsed .workflow-section-progress{opacity:.5}
+.fn-node{touch-action:none}
+.fn-node.connect-source{outline:2px solid #A78BFA;outline-offset:4px}
+.node-tools{
+  position:absolute;right:8px;top:-15px;display:flex;gap:4px;opacity:0;transform:translateY(4px);
+  transition:.15s;z-index:5;
+}
+.fn-node:hover .node-tools,.fn-node.node-active .node-tools{opacity:1;transform:translateY(0)}
+.node-tool{
+  width:25px;height:25px;border-radius:8px;background:rgba(15,14,26,.9);
+  border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.74);
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;
+}
+.node-tool:hover{background:rgba(167,139,250,.2);color:white}
+.edge-path{pointer-events:stroke;cursor:pointer;transition:stroke .15s,opacity .15s}
+.edge-path:hover{stroke-width:4}
+.edge-selected{stroke-width:4!important;filter:drop-shadow(0 0 8px currentColor)}
+.canvas-theme-dark{background:#202020}
+.canvas-theme-light{background:#F7F7F5}
+.canvas-grid-bg{
+  background-image:
+    linear-gradient(rgba(255,255,255,0.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.045) 1px,transparent 1px),
+    radial-gradient(circle at center,rgba(255,255,255,0.08) 1px,transparent 1px);
+  background-size:160px 160px,160px 160px,32px 32px;
+}
+.canvas-vignette{background:radial-gradient(ellipse at center,transparent 0%,rgba(25,25,25,0.46) 92%)}
+.canvas-theme-light .canvas-grid-bg{
+  background-image:
+    linear-gradient(rgba(20,20,20,0.055) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(20,20,20,0.055) 1px,transparent 1px),
+    radial-gradient(circle at center,rgba(20,20,20,0.1) 1px,transparent 1px);
+}
+.canvas-theme-light .canvas-vignette{background:radial-gradient(ellipse at center,transparent 0%,rgba(247,247,245,0.42) 92%)}
+.canvas-theme-light .workflow-region{background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(246,246,243,.44));border-color:color-mix(in srgb,var(--section-color,#A78BFA) 55%,rgba(20,20,20,.18))}
+.canvas-theme-light .workflow-section-header,.canvas-theme-light .fn-node{
+  background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(242,242,238,.96));
+  border-color:rgba(20,20,20,.12);color:#202020;box-shadow:0 10px 28px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.7);
+}
+.canvas-theme-light .fn-desc,.canvas-theme-light .workflow-section-sub,.canvas-theme-light .fn-tag,.canvas-theme-light .text-white\/40,.canvas-theme-light .text-white\/50{color:rgba(32,32,32,.58)}
+.canvas-theme-light .fn-node-head,.canvas-theme-light .fn-node-foot{border-color:rgba(20,20,20,.08)}
+.canvas-theme-light .fn-tag{background:rgba(20,20,20,.045);border-color:rgba(20,20,20,.08)}
+.canvas-theme-light .node-tool{background:rgba(255,255,255,.94);border-color:rgba(20,20,20,.12);color:#202020}
+
+/* Slide-up notification toast */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  padding:14px 20px;border-radius:14px;
+  font-size:13px;font-weight:600;
+  z-index:1000;animation:fade-up 0.3s ease-out forwards;
+}
+@keyframes fade-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body class="bg-cosmos overflow-hidden h-screen">
+
+<!-- BACKGROUND GRID OVERLAY -->
+<div class="fixed inset-0 grid-overlay pointer-events-none opacity-60"></div>
+
+<!-- AMBIENT BLOBS -->
+<div class="fixed top-0 left-1/4 w-[600px] h-[600px] bg-neon-purple/10 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="fixed bottom-0 right-0 w-[500px] h-[500px] bg-neon-blue/8 rounded-full blur-[120px] pointer-events-none"></div>
+
+<div class="relative flex h-screen overflow-hidden">
+
+  <!-- ═════════════ SIDEBAR ═════════════ -->
+  <aside class="w-[68px] glass border-r border-white/[0.04] flex flex-col items-center py-5 gap-1 relative z-20 flex-shrink-0">
+    <!-- LOGO -->
+    <button onclick="showDash()" class="w-11 h-11 rounded-2xl bg-gradient-to-br from-neon-violet to-neon-purple flex items-center justify-center mb-6 glow-purple hover:scale-105 transition-transform">
+      <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+        <path d="M3 12L7 8L11 12L7 16L3 12Z" fill="currentColor"/>
+        <path d="M13 12L17 8L21 12L17 16L13 12Z" fill="currentColor" opacity="0.6"/>
+      </svg>
+    </button>
+
+    <!-- NAV ITEMS -->
+    <button class="sb-item active group" id="sb-dash" onclick="showDash()" title="Dashboard" aria-label="Dashboard">
+      <span class="sb-indicator"></span>
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>
+    </button>
+    <button class="sb-item group" id="sb-projects" onclick="showModule('projects')" title="Projects" aria-label="Projects">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
+    </button>
+    <button class="sb-item group" id="sb-tasks" onclick="showModule('tasks')" title="Tasks" aria-label="Tasks">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    </button>
+    <button class="sb-item group" id="sb-calendar" onclick="showModule('calendar')" title="Calendar" aria-label="Calendar">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </button>
+    <button class="sb-item group" id="sb-files" onclick="showModule('files')" title="Files" aria-label="Files">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </button>
+    <button class="sb-item group" id="sb-team" onclick="showModule('team')" title="Team" aria-label="Team">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    </button>
+    <button class="sb-item group" id="sb-reports" onclick="showModule('reports')" title="Reports" aria-label="Reports">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    </button>
+    <div class="flex-1"></div>
+    <button class="sb-item group" id="sb-settings" onclick="showModule('settings')" title="Settings" aria-label="Settings">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+  </aside>
+
+  <!-- ═════════════ MAIN ═════════════ -->
+  <div class="flex-1 flex flex-col overflow-hidden relative z-10">
+
+    <!-- TOPBAR -->
+    <header class="h-16 glass border-b border-white/[0.04] flex items-center px-6 gap-4 flex-shrink-0">
+      <!-- Workspace selector -->
+      <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] cursor-pointer transition-colors">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-neon-violet to-neon-purple flex items-center justify-center text-xs font-bold text-white">M</div>
+        <div class="text-[13px] font-semibold">Meridian Studio</div>
+        <svg class="w-3.5 h-3.5 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <!-- Search -->
+      <div class="flex-1 max-w-md flex items-center gap-3 px-4 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] hover:border-white/[0.1] transition-colors">
+        <svg class="w-4 h-4 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="flex-1 bg-transparent border-none outline-none text-[13px] placeholder:text-white/30" placeholder="Search projects, files, people…">
+        <span class="font-mono text-[10px] text-white/40 px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06]">⌘</span>
+        <span class="font-mono text-[10px] text-white/40 px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06]">K</span>
+      </div>
+
+      <div class="flex-1"></div>
+
+      <!-- Live sync -->
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neon-green/10 border border-neon-green/20">
+        <div class="w-1.5 h-1.5 rounded-full bg-neon-green pulse-dot text-neon-green"></div>
+        <span class="text-[11px] font-mono font-semibold text-neon-mint">LIVE · 4 EDITING</span>
+      </div>
+
+      <!-- Avatar stack -->
+      <div class="flex -space-x-2">
+        <div class="w-8 h-8 rounded-full bg-neon-purple/30 border-2 border-ink-900 flex items-center justify-center text-[10px] font-bold text-neon-purple">JR</div>
+        <div class="w-8 h-8 rounded-full bg-neon-blue/30 border-2 border-ink-900 flex items-center justify-center text-[10px] font-bold text-neon-blue">SK</div>
+        <div class="w-8 h-8 rounded-full bg-neon-green/30 border-2 border-ink-900 flex items-center justify-center text-[10px] font-bold text-neon-green">ML</div>
+      </div>
+
+      <!-- Notification -->
+      <button class="relative w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] flex items-center justify-center transition-colors">
+        <svg class="w-4 h-4 text-white/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-neon-pink text-[9px] font-bold flex items-center justify-center px-1 border-2 border-ink-900">3</span>
+      </button>
+
+      <!-- Add New -->
+      <button onclick="addNewMenu()" class="flex items-center gap-2 px-4 h-10 rounded-xl bg-gradient-to-br from-neon-violet to-neon-purple text-white font-semibold text-[13px] glow-purple hover:scale-[1.02] active:scale-95 transition-transform">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New
+      </button>
+
+      <!-- User -->
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-neon-purple to-neon-pink flex items-center justify-center text-[12px] font-bold cursor-pointer">JD</div>
+    </header>
+
+    <!-- ═════════════ CONTENT ═════════════ -->
+    <div class="flex-1 overflow-hidden relative">
+
+      <!-- ═══════════ DASHBOARD VIEW ═══════════ -->
+      <div id="view-dash" class="absolute inset-0 overflow-y-auto canvas-scroll">
+        <div class="px-8 py-8 w-full">
+
+          <!-- HEADER -->
+          <div class="flex items-end justify-between mb-8 animate-[fade-up_0.6s_ease-out]">
+            <div>
+              <div class="text-[11px] font-mono font-semibold text-white/40 mb-2 tracking-wider">DASHBOARD / OVERVIEW</div>
+              <h1 class="text-4xl font-extrabold tracking-tight leading-none">
+                <span class="text-gradient-mix">Production OS</span>
+              </h1>
+              <div class="text-[13px] text-white/50 mt-3 font-medium">May 18, 2026 · 12 active projects · 4 offices</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <button class="flex items-center gap-2 px-4 h-10 rounded-xl glass border-white/[0.06] hover:border-white/[0.12] text-[13px] font-semibold transition-colors">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
+                Filter
+              </button>
+              <button class="flex items-center gap-2 px-4 h-10 rounded-xl glass border-white/[0.06] hover:border-white/[0.12] text-[13px] font-semibold transition-colors">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                Customize
+              </button>
+            </div>
+          </div>
+
+          <!-- ═══════════ PIPELINE OVERVIEW (consolidated metric widget) ═══════════ -->
+          <div class="glass rounded-2xl p-6 mb-6 glass-glow relative overflow-hidden">
+            <!-- Top gradient accent line -->
+            <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-purple to-transparent"></div>
+            <!-- Ambient corner glow -->
+            <div class="absolute -top-20 -right-20 w-60 h-60 bg-neon-purple/8 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- HEADER -->
+            <div class="flex items-center justify-between mb-6 relative">
+              <div class="flex items-center gap-3">
+                <h3 class="text-[15px] font-bold tracking-tight">Pipeline Overview</h3>
+                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neon-green/10 border border-neon-green/20">
+                  <div class="w-1 h-1 rounded-full bg-neon-green pulse-dot text-neon-green"></div>
+                  <span class="text-[9px] font-mono font-bold text-neon-mint tracking-wider">REAL-TIME</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="text-[11px] font-mono text-white/50 hover:text-white px-3 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center gap-1.5">
+                  Last 7 days <svg class="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.5"/></svg>
+                </button>
+                <button class="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] flex items-center justify-center text-white/50 hover:text-white transition-colors">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2-COLUMN LAYOUT -->
+            <div class="grid grid-cols-12 gap-6 relative">
+
+              <!-- ─── LEFT: TOTAL ACTIVITY + STAT TILES ─── -->
+              <div class="col-span-7 pr-6 border-r border-white/[0.05]">
+                <div class="text-[10px] font-mono font-bold text-white/40 tracking-wider mb-2">TOTAL ACTIVITY</div>
+                <div class="flex items-end gap-3 mb-1">
+                  <div class="text-[52px] font-extrabold tracking-tighter leading-none text-gradient-purple">64%</div>
+                  <div class="flex items-center gap-1 pb-2 text-[12px] font-mono font-bold text-neon-mint">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
+                    +12% vs last week
+                  </div>
+                </div>
+                <div class="text-[11px] font-mono text-white/40 mb-5">32 total projects across 5 statuses</div>
+
+                <!-- Segmented bar -->
+                <div class="h-3 rounded-full overflow-hidden flex gap-1 mb-2">
+                  <div class="bg-gradient-to-r from-neon-violet to-neon-purple rounded-full" style="width:42%;box-shadow:0 0 12px rgba(167,139,250,0.5)"></div>
+                  <div class="bg-gradient-to-r from-neon-blue to-neon-cyan rounded-full" style="width:23%;box-shadow:0 0 12px rgba(59,130,246,0.4)"></div>
+                  <div class="bg-gradient-to-r from-neon-green to-neon-mint rounded-full" style="width:22%;box-shadow:0 0 12px rgba(16,185,129,0.4)"></div>
+                  <div class="bg-neon-amber/80 rounded-full" style="width:8%;box-shadow:0 0 10px rgba(245,158,11,0.4)"></div>
+                  <div class="bg-neon-red/60 rounded-full" style="width:5%;box-shadow:0 0 10px rgba(239,68,68,0.4)"></div>
+                </div>
+                <div class="flex justify-between text-[9px] font-mono font-bold mb-6">
+                  <div class="text-neon-purple">42%</div>
+                  <div class="text-neon-blue">23%</div>
+                  <div class="text-neon-green">22%</div>
+                  <div class="text-neon-amber">8%</div>
+                  <div class="text-neon-red">5%</div>
+                </div>
+
+                <!-- 5 stat tiles -->
+                <div class="grid grid-cols-5 gap-2.5">
+                  <div class="text-center p-3 rounded-xl bg-neon-purple/8 border border-neon-purple/20 lift cursor-pointer group">
+                    <div class="w-8 h-8 mx-auto mb-2 rounded-full bg-neon-purple/20 flex items-center justify-center">
+                      <div class="w-2 h-2 rounded-full bg-neon-purple pulse-dot text-neon-purple"></div>
+                    </div>
+                    <div class="text-[22px] font-extrabold leading-none text-neon-purple">12</div>
+                    <div class="text-[9px] font-mono font-bold text-white/50 tracking-wider mt-1.5">ACTIVE</div>
+                  </div>
+                  <div class="text-center p-3 rounded-xl bg-neon-blue/8 border border-neon-blue/20 lift cursor-pointer group">
+                    <div class="w-8 h-8 mx-auto mb-2 rounded-full bg-neon-blue/20 flex items-center justify-center">
+                      <svg class="w-3.5 h-3.5 text-neon-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div class="text-[22px] font-extrabold leading-none text-neon-blue">3</div>
+                    <div class="text-[9px] font-mono font-bold text-white/50 tracking-wider mt-1.5">DUE 7D</div>
+                  </div>
+                  <div class="text-center p-3 rounded-xl bg-neon-green/8 border border-neon-green/20 lift cursor-pointer group">
+                    <div class="w-8 h-8 mx-auto mb-2 rounded-full bg-neon-green/20 flex items-center justify-center">
+                      <svg class="w-3.5 h-3.5 text-neon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div class="text-[22px] font-extrabold leading-none text-neon-green">8</div>
+                    <div class="text-[9px] font-mono font-bold text-white/50 tracking-wider mt-1.5">DELIVERED</div>
+                  </div>
+                  <div class="text-center p-3 rounded-xl bg-neon-amber/8 border border-neon-amber/20 lift cursor-pointer group">
+                    <div class="w-8 h-8 mx-auto mb-2 rounded-full bg-neon-amber/20 flex items-center justify-center">
+                      <svg class="w-3.5 h-3.5 text-neon-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                    </div>
+                    <div class="text-[22px] font-extrabold leading-none text-neon-amber">5</div>
+                    <div class="text-[9px] font-mono font-bold text-white/50 tracking-wider mt-1.5">PENDING</div>
+                  </div>
+                  <div class="text-center p-3 rounded-xl bg-neon-red/8 border border-neon-red/20 lift cursor-pointer group">
+                    <div class="w-8 h-8 mx-auto mb-2 rounded-full bg-neon-red/20 flex items-center justify-center">
+                      <svg class="w-3.5 h-3.5 text-neon-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    </div>
+                    <div class="text-[22px] font-extrabold leading-none text-neon-red">2</div>
+                    <div class="text-[9px] font-mono font-bold text-white/50 tracking-wider mt-1.5">CANCELLED</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ─── RIGHT: PROJECT PROGRESS RADIAL ─── -->
+              <div class="col-span-5 pl-2">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-[10px] font-mono font-bold text-white/40 tracking-wider">PROJECT PROGRESS</div>
+                  <div class="text-[10px] font-mono font-bold text-neon-mint">↑ ON TRACK</div>
+                </div>
+
+                <div class="relative h-[180px] flex flex-col items-center justify-end mt-1">
+                  <svg viewBox="0 0 260 160" class="w-full h-full max-w-[280px]">
+                    <defs>
+                      <linearGradient id="progress-gradient" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#3B82F6"/>
+                        <stop offset="50%" stop-color="#A78BFA"/>
+                        <stop offset="100%" stop-color="#10B981"/>
+                      </linearGradient>
+                    </defs>
+                    <g id="dash-radial"></g>
+                  </svg>
+                  <div class="absolute inset-0 flex flex-col items-center justify-end pb-2">
+                    <div class="text-[44px] font-extrabold tracking-tighter leading-none">
+                      <span class="text-gradient-mix">80<span class="text-[26px]">%</span></span>
+                    </div>
+                    <div class="text-[10px] text-white/40 font-mono font-semibold tracking-wide mt-1">PROJECT COMPLETED</div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/5">
+                  <div class="text-center">
+                    <div class="text-[22px] font-extrabold leading-none text-neon-blue">32</div>
+                    <div class="flex items-center justify-center gap-1.5 mt-1.5"><div class="w-1.5 h-1.5 rounded-full bg-neon-blue"></div><span class="text-[9px] font-mono text-white/50">In progress</span></div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-[22px] font-extrabold leading-none text-neon-green">12</div>
+                    <div class="flex items-center justify-center gap-1.5 mt-1.5"><div class="w-1.5 h-1.5 rounded-full bg-neon-green"></div><span class="text-[9px] font-mono text-white/50">Done</span></div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-[22px] font-extrabold leading-none text-white/30">16</div>
+                    <div class="flex items-center justify-center gap-1.5 mt-1.5"><div class="w-1.5 h-1.5 rounded-full bg-white/20"></div><span class="text-[9px] font-mono text-white/50">Backlog</span></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+              <!-- ─── MIDDLE: VALUE PIPELINE (stem chart) ─── REMOVED -->
+
+          <!-- MAIN GRID -->
+          <div class="grid grid-cols-12 gap-4 mb-6">
+
+            <!-- TODAY'S TASKS -->
+            <div class="col-span-4 glass rounded-2xl p-6 lift glass-glow">
+              <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-[15px] font-bold">Today's Tasks</h3>
+                  <span class="text-[10px] font-mono font-bold text-neon-purple bg-neon-purple/15 px-2 py-0.5 rounded-md">5</span>
+                </div>
+                <button class="text-[11px] font-mono text-white/50 hover:text-white px-3 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center gap-1.5">
+                  Manage <svg class="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none"><path d="M2 5h6m-2-2l2 2-2 2" stroke="currentColor" stroke-width="1.5"/></svg>
+                </button>
+              </div>
+              <button class="w-full py-3 mb-3 border border-dashed border-white/15 rounded-xl text-[12px] font-semibold text-white/50 hover:text-neon-purple hover:border-neon-purple/40 hover:bg-neon-purple/5 transition-all flex items-center justify-center gap-2">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add new task
+              </button>
+              <div class="space-y-1 max-h-[220px] overflow-y-auto pr-1">
+                <div class="task-item">
+                  <div class="task-check" onclick="toggleTask(this)"></div>
+                  <div class="task-text">Review Concept C mockups for Meridian Health</div>
+                </div>
+                <div class="task-item">
+                  <div class="task-check" onclick="toggleTask(this)"></div>
+                  <div class="task-text">In-depth metrics review for Brand Refresh project</div>
+                </div>
+                <div class="task-item">
+                  <div class="task-check" onclick="toggleTask(this)"></div>
+                  <div class="task-text">Approval call with Cascade Software PM</div>
+                </div>
+                <div class="task-item done">
+                  <div class="task-check checked" onclick="toggleTask(this)"></div>
+                  <div class="task-text">Share Figma access with the new freelancer</div>
+                </div>
+                <div class="task-item">
+                  <div class="task-check" onclick="toggleTask(this)"></div>
+                  <div class="task-text">Start designing Nova Fintech landing page wireframes</div>
+                </div>
+                <div class="task-item">
+                  <div class="task-check" onclick="toggleTask(this)"></div>
+                  <div class="task-text">Sync with production team on print timeline</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CALENDAR -->
+            <div class="col-span-4 glass rounded-2xl p-6 lift glass-glow">
+              <div class="flex items-center justify-between mb-5">
+                <h3 class="text-[15px] font-bold">Calendar</h3>
+                <button class="text-[11px] font-mono text-white/50 hover:text-white px-3 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center gap-1.5">
+                  May 2026 <svg class="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.5"/></svg>
+                </button>
+              </div>
+              <div class="grid grid-cols-7 gap-1.5" id="cal-grid"></div>
+              <div class="flex items-center gap-3 mt-4 pt-4 border-t border-white/5 text-[10px] font-mono">
+                <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-neon-purple"></div><span class="text-white/50">Deadline</span></div>
+                <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-neon-green"></div><span class="text-white/50">Milestone</span></div>
+                <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-neon-blue"></div><span class="text-white/50">Review</span></div>
+                <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-neon-pink"></div><span class="text-white/50">Launch</span></div>
+              </div>
+            </div>
+
+            <!-- TODAY'S MEETINGS -->
+            <div class="col-span-4 glass rounded-2xl p-6 lift glass-glow">
+              <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-[15px] font-bold">Meetings</h3>
+                  <span class="text-[10px] font-mono font-bold text-neon-purple bg-neon-purple/15 px-2 py-0.5 rounded-md">4</span>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <!-- Ongoing -->
+                <div class="relative bg-gradient-to-br from-neon-purple/20 via-neon-violet/10 to-transparent border border-neon-purple/30 rounded-xl p-3.5">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="text-[14px] font-bold font-mono">10:00</div>
+                    <div class="text-[9px] font-mono font-bold text-white bg-neon-purple px-2 py-0.5 rounded-md tracking-wider glow-purple">ONGOING</div>
+                  </div>
+                  <div class="text-[11px] text-white/80 leading-snug">Present project & gather feedback for the brand guidelines</div>
+                  <div class="flex items-center justify-between mt-2.5">
+                    <div class="flex -space-x-1.5">
+                      <div class="w-5 h-5 rounded-full bg-neon-purple/40 border border-ink-900 text-[8px] font-bold flex items-center justify-center">JR</div>
+                      <div class="w-5 h-5 rounded-full bg-neon-blue/40 border border-ink-900 text-[8px] font-bold flex items-center justify-center">SK</div>
+                      <div class="w-5 h-5 rounded-full bg-neon-green/40 border border-ink-900 text-[8px] font-bold flex items-center justify-center">ML</div>
+                    </div>
+                    <button class="text-[10px] font-mono font-bold text-neon-purple hover:text-white">Join ↗</button>
+                  </div>
+                </div>
+                <!-- Others -->
+                <div class="flex items-start gap-3 p-2 hover:bg-white/[0.03] rounded-lg transition-colors cursor-pointer group">
+                  <div class="text-[14px] font-bold font-mono text-white/50 w-12 flex-shrink-0">13:00</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[11px] text-white/80 truncate">Approval call · Cascade</div>
+                    <div class="text-[9px] font-mono text-white/40 mt-0.5">30 min · Zoom</div>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-white/30 group-hover:text-neon-purple transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                </div>
+                <div class="flex items-start gap-3 p-2 hover:bg-white/[0.03] rounded-lg transition-colors cursor-pointer group">
+                  <div class="text-[14px] font-bold font-mono text-white/50 w-12 flex-shrink-0">17:00</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[11px] text-white/80 truncate">Product sync with Manager</div>
+                    <div class="text-[9px] font-mono text-white/40 mt-0.5">45 min · In person</div>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-white/30 group-hover:text-neon-purple transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                </div>
+                <div class="flex items-start gap-3 p-2 hover:bg-white/[0.03] rounded-lg transition-colors cursor-pointer group">
+                  <div class="text-[14px] font-bold font-mono text-white/50 w-12 flex-shrink-0">20:00</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[11px] text-white/80 truncate">Team retrospective</div>
+                    <div class="text-[9px] font-mono text-white/40 mt-0.5">60 min · Meet</div>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-white/30 group-hover:text-neon-purple transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ═══════════ TEAM PROJECTS CALENDAR TIMELINE ═══════════ -->
+          <div class="glass rounded-2xl p-6 mb-6 glass-glow relative overflow-hidden">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center gap-3">
+                <h3 class="text-[18px] font-bold tracking-tight">Team Projects</h3>
+                <span class="text-[10px] font-mono font-bold text-neon-purple bg-neon-purple/15 px-2 py-0.5 rounded-md">4</span>
+                <button class="text-[11px] font-mono font-bold text-neon-purple hover:text-white flex items-center gap-1.5">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                  Share link
+                </button>
+              </div>
+              <div class="flex items-center gap-3">
+                <!-- View toggle -->
+                <div class="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-lg p-0.5">
+                  <button class="text-[11px] font-mono font-bold px-3 py-1.5 rounded-md bg-gradient-to-br from-neon-violet to-neon-purple text-white glow-purple">Calendar</button>
+                  <button class="text-[11px] font-mono font-bold px-3 py-1.5 rounded-md text-white/40 hover:text-white">Block</button>
+                  <button class="text-[11px] font-mono font-bold px-3 py-1.5 rounded-md text-white/40 hover:text-white">Table</button>
+                </div>
+                <!-- Filters -->
+                <button class="flex items-center gap-1.5 text-[11px] font-mono text-white/50 hover:text-white px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                  Filters
+                  <span class="text-[9px] font-bold text-neon-purple bg-neon-purple/15 px-1.5 py-0.5 rounded">3</span>
+                </button>
+                <div class="w-px h-5 bg-white/10"></div>
+                <!-- Month navigator -->
+                <div class="flex items-center gap-2">
+                  <button class="w-7 h-7 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] flex items-center justify-center text-white/60 transition-colors">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <div class="text-[13px] font-bold font-mono">May, 2026</div>
+                  <button class="w-7 h-7 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] flex items-center justify-center text-white/60 transition-colors">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Day-of-week header -->
+            <div class="grid grid-cols-7 gap-3 mb-3 pb-3 border-b border-white/[0.05]">
+              <div class="text-[11px] font-mono font-bold text-white/40 tracking-wider">Sat</div>
+              <div class="text-[11px] font-mono font-bold text-white/40 tracking-wider">Sun</div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] font-mono font-bold text-white/60 tracking-wider">Mon</span>
+                <span class="text-[10px] font-mono font-bold text-neon-purple bg-neon-purple/15 px-1.5 py-0.5 rounded">17</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] font-mono font-bold text-white tracking-wider">Tue</span>
+                <div class="w-1.5 h-1.5 rounded-full bg-neon-purple pulse-dot text-neon-purple"></div>
+              </div>
+              <div class="text-[11px] font-mono font-bold text-white/40 tracking-wider">Wed</div>
+              <div class="text-[11px] font-mono font-bold text-white/40 tracking-wider">Thu</div>
+              <div class="text-[11px] font-mono font-bold text-white/40 tracking-wider">Fri</div>
+            </div>
+
+            <!-- Calendar grid: 7 columns × multiple rows for events -->
+            <div class="relative">
+              <!-- Vertical grid lines -->
+              <div class="absolute inset-0 grid grid-cols-7 gap-3 pointer-events-none">
+                <div class="border-r border-dashed border-white/[0.04]"></div>
+                <div class="border-r border-dashed border-white/[0.04]"></div>
+                <div class="border-r border-dashed border-white/[0.04]"></div>
+                <div class="border-r border-dashed border-white/[0.04]"></div>
+                <div class="border-r border-dashed border-white/[0.04]"></div>
+                <div class="border-r border-dashed border-white/[0.04]"></div>
+                <div></div>
+              </div>
+
+              <!-- Event row 1 -->
+              <div class="grid grid-cols-7 gap-3 mb-3 min-h-[120px] relative">
+                <!-- Sat: New Brief CTA -->
+                <button class="group h-[100px] rounded-2xl bg-gradient-to-br from-neon-violet to-neon-purple glow-purple flex flex-col items-center justify-center text-white hover:scale-[1.03] active:scale-95 transition-transform cursor-pointer">
+                  <svg class="w-7 h-7 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L9 9l-7 1 5.27 4.61L5.82 22 12 18l6.18 4-1.45-7.39L22 10l-7-1z"/></svg>
+                  <span class="text-[12px] font-bold tracking-tight">New Brief</span>
+                </button>
+
+                <!-- Sun: Team Meeting card (green) -->
+                <div class="rounded-2xl bg-gradient-to-br from-neon-green/30 to-neon-mint/20 border border-neon-green/30 p-3 flex flex-col cursor-pointer hover:scale-[1.02] transition-transform">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="text-[9px] font-mono font-bold text-neon-green tracking-wider">PRODUCT DESIGN</div>
+                    <svg class="w-3.5 h-3.5 text-neon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                  </div>
+                  <div class="text-[12px] font-bold text-white leading-tight mb-2">Team Meeting</div>
+                  <div class="flex-1"></div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex -space-x-1.5">
+                      <div class="w-5 h-5 rounded-full bg-neon-purple/40 border border-ink-900 text-[7px] font-bold flex items-center justify-center text-white">JR</div>
+                      <div class="w-5 h-5 rounded-full bg-neon-blue/40 border border-ink-900 text-[7px] font-bold flex items-center justify-center text-white">SK</div>
+                    </div>
+                    <span class="text-[9px] font-mono font-bold text-white/70">May 12–15</span>
+                  </div>
+                  <div class="mt-2 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/30 border border-neon-green/20">
+                    <span class="text-[8px] font-mono text-white/60 truncate flex-1">meet/we-pro</span>
+                    <button class="text-[9px] font-mono font-bold text-neon-green hover:text-white">Join</button>
+                  </div>
+                </div>
+
+                <!-- Mon: 3D Project preview card (large with image-like gradient) -->
+                <div class="rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform relative">
+                  <!-- "Image" preview area (abstract gradient) -->
+                  <div class="h-12 relative overflow-hidden" style="background:radial-gradient(circle at 30% 30%, #A78BFA 0%, #7C3AED 30%, #1E1B2E 70%), radial-gradient(circle at 70% 60%, #EC4899 0%, transparent 40%);background-blend-mode:screen">
+                    <div class="absolute inset-0" style="background:radial-gradient(ellipse at 60% 40%, #FBBF24 0%, transparent 50%)"></div>
+                    <button class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white/80">
+                      <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                    </button>
+                  </div>
+                  <!-- Content (yellow card) -->
+                  <div class="bg-gradient-to-br from-amber-400 to-yellow-500 p-3 flex flex-col" style="min-height:48px">
+                    <div class="text-[9px] font-mono font-bold text-ink-900/70 tracking-wider mb-0.5">3D DESIGN</div>
+                    <div class="text-[12px] font-extrabold text-ink-900 leading-tight">Project details</div>
+                    <div class="flex items-center justify-between mt-1.5">
+                      <div class="flex -space-x-1.5">
+                        <div class="w-4 h-4 rounded-full bg-ink-900/30 border border-amber-400 text-[7px] font-bold flex items-center justify-center text-ink-900">M</div>
+                        <div class="w-4 h-4 rounded-full bg-ink-900/30 border border-amber-400 text-[7px] font-bold flex items-center justify-center text-ink-900">D</div>
+                      </div>
+                      <span class="text-[9px] font-mono font-bold text-ink-900">12–15</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tue: Wireframe meeting (mint green pill) -->
+                <div class="rounded-2xl bg-gradient-to-br from-lime-400 to-neon-green border border-neon-mint/40 p-3 flex flex-col cursor-pointer hover:scale-[1.02] transition-transform" style="height:fit-content">
+                  <div class="flex items-center justify-between mb-1">
+                    <div class="text-[9px] font-mono font-bold text-ink-900/70 tracking-wider">WIREFRAME</div>
+                    <svg class="w-3.5 h-3.5 text-ink-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                  </div>
+                  <div class="text-[11px] font-bold text-ink-900 leading-tight">Meeting on 2:29 PM</div>
+                </div>
+
+                <!-- Wed: Smart Bike App (orange) -->
+                <div class="rounded-2xl bg-gradient-to-br from-orange-500 to-pink-500 p-3 flex flex-col cursor-pointer hover:scale-[1.02] transition-transform glow-pink">
+                  <div class="flex items-center justify-between mb-1">
+                    <div class="text-[9px] font-mono font-bold text-white/80 tracking-wider">WIREDRAME</div>
+                    <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                  </div>
+                  <div class="text-[12px] font-extrabold text-white leading-tight mb-1.5">Smart Bike App</div>
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <div class="w-5 h-5 rounded-full bg-white/30 border border-white/40 text-[7px] font-bold flex items-center justify-center text-white">LF</div>
+                    <div class="text-[9px] text-white/90 font-semibold">Lindsey Franci</div>
+                  </div>
+                  <div class="text-[9px] text-white/85 leading-snug mb-2">In this project, we intend to use new technologies and AI to improve</div>
+                  <div class="mt-auto flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/25 backdrop-blur-sm">
+                    <span class="text-[8px] font-mono text-white/70 truncate flex-1">meet/we-pro</span>
+                    <button class="text-[9px] font-mono font-bold text-white hover:text-yellow-200">Join</button>
+                  </div>
+                </div>
+
+                <!-- Thu: Web App (orange) -->
+                <div class="rounded-2xl bg-gradient-to-br from-orange-400 to-pink-500 p-3 flex flex-col cursor-pointer hover:scale-[1.02] transition-transform glow-pink" style="height:fit-content">
+                  <div class="flex items-center justify-between mb-1">
+                    <div class="text-[9px] font-mono font-bold text-white/80 tracking-wider">WIREDRAME</div>
+                    <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                  </div>
+                  <div class="text-[12px] font-extrabold text-white leading-tight mb-1.5">Web App</div>
+                  <div class="flex items-center gap-1.5 mb-2">
+                    <div class="w-5 h-5 rounded-full bg-white/30 border border-white/40 text-[7px] font-bold flex items-center justify-center text-white">DW</div>
+                  </div>
+                  <div class="mt-auto flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/25 backdrop-blur-sm">
+                    <span class="text-[8px] font-mono text-white/70 truncate flex-1">meet/we-pro</span>
+                    <button class="text-[9px] font-mono font-bold text-white hover:text-yellow-200">Join</button>
+                  </div>
+                </div>
+
+                <!-- Fri: Product Team (green) -->
+                <div class="rounded-2xl bg-gradient-to-br from-neon-green/30 to-neon-mint/20 border border-neon-green/30 p-3 flex flex-col cursor-pointer hover:scale-[1.02] transition-transform" style="height:fit-content">
+                  <div class="flex items-center justify-between mb-1">
+                    <div class="text-[9px] font-mono font-bold text-neon-green tracking-wider">PRODUCT</div>
+                    <svg class="w-3.5 h-3.5 text-neon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                  </div>
+                  <div class="text-[12px] font-bold text-white leading-tight">Team sync</div>
+                  <div class="flex -space-x-1.5 mt-2">
+                    <div class="w-5 h-5 rounded-full bg-neon-purple/40 border border-ink-900 text-[7px] font-bold flex items-center justify-center text-white">JR</div>
+                    <div class="w-5 h-5 rounded-full bg-neon-pink/40 border border-ink-900 text-[7px] font-bold flex items-center justify-center text-white">DW</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Event row 2: Add button + supplementary -->
+              <div class="grid grid-cols-7 gap-3 min-h-[68px]">
+                <!-- Sat: Add button -->
+                <button class="h-[60px] rounded-2xl bg-ink-700/60 border border-dashed border-white/15 hover:border-neon-purple hover:bg-neon-purple/10 flex flex-col items-center justify-center text-white/40 hover:text-neon-purple transition-all cursor-pointer">
+                  <svg class="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span class="text-[10px] font-mono font-bold tracking-wider">ADD</span>
+                </button>
+                <!-- Sun: Find Edit -->
+                <div class="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-2.5 flex items-center justify-between cursor-pointer hover:bg-white/[0.06] transition-colors">
+                  <span class="text-[10px] font-mono text-white/60">Find Edit..</span>
+                  <svg class="w-3 h-3 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- THIRD ROW: PROJECTS + MAP + ACTIVITY -->
+          <div class="grid grid-cols-12 gap-4 mb-6">
+
+            <!-- ACTIVE PROJECTS LIST -->
+            <div class="col-span-8 glass rounded-2xl p-6 lift glass-glow">
+              <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-3">
+                  <h3 class="text-[15px] font-bold">Active Projects</h3>
+                  <span class="text-[10px] font-mono font-bold text-neon-mint bg-neon-green/15 px-2 py-0.5 rounded-md">12 LIVE</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-lg p-0.5">
+                    <button class="text-[10px] font-mono font-bold px-3 py-1 rounded-md bg-neon-purple/20 text-neon-purple">All</button>
+                    <button class="text-[10px] font-mono font-bold px-3 py-1 rounded-md text-white/40 hover:text-white">Live</button>
+                    <button class="text-[10px] font-mono font-bold px-3 py-1 rounded-md text-white/40 hover:text-white">Review</button>
+                    <button class="text-[10px] font-mono font-bold px-3 py-1 rounded-md text-white/40 hover:text-white">Done</button>
+                  </div>
+                  <button class="text-[11px] font-mono text-white/50 hover:text-white px-3 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06]">View all →</button>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <!-- Row 1 -->
+                <div class="project-row group" onclick="openProject('brand-refresh')">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-purple/30 to-neon-violet/30 border border-neon-purple/20 flex items-center justify-center flex-shrink-0">
+                      <svg class="w-5 h-5 text-neon-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-[13px] font-bold tracking-tight">Brand Refresh Campaign</div>
+                      <div class="text-[10px] font-mono text-white/40 mt-0.5">MERIDIAN HEALTH · NYC · 9/13 steps</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-neon-green pulse-dot text-neon-green"></div><span class="text-[10px] font-mono font-bold text-neon-mint">LIVE</span></div>
+                  <div class="flex items-center gap-2.5">
+                    <div class="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div class="h-full bg-gradient-to-r from-neon-blue via-neon-purple to-neon-green rounded-full" style="width:68%"></div>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold text-white/70">68%</span>
+                  </div>
+                  <div class="flex -space-x-1.5">
+                    <div class="w-6 h-6 rounded-full bg-neon-purple/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-purple">JR</div>
+                    <div class="w-6 h-6 rounded-full bg-neon-blue/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-blue">SK</div>
+                    <div class="w-6 h-6 rounded-full bg-neon-green/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-green">ML</div>
+                  </div>
+                  <div class="opacity-0 group-hover:opacity-100 text-neon-purple text-[11px] font-mono font-bold flex items-center gap-1 transition-opacity">OPEN <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
+                </div>
+                <!-- Row 2 -->
+                <div class="project-row group" onclick="openProject('product-launch')">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-amber/20 to-neon-pink/20 border border-neon-amber/20 flex items-center justify-center flex-shrink-0">
+                      <svg class="w-5 h-5 text-neon-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-[13px] font-bold tracking-tight">Product Launch — v3.0</div>
+                      <div class="text-[10px] font-mono text-white/40 mt-0.5">CASCADE SOFTWARE · LA · 11/13 steps</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-neon-amber"></div><span class="text-[10px] font-mono font-bold text-neon-amber">REVIEW</span></div>
+                  <div class="flex items-center gap-2.5">
+                    <div class="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div class="h-full bg-gradient-to-r from-neon-amber to-neon-green rounded-full" style="width:85%"></div>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold text-white/70">85%</span>
+                  </div>
+                  <div class="flex -space-x-1.5">
+                    <div class="w-6 h-6 rounded-full bg-neon-blue/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-blue">SK</div>
+                    <div class="w-6 h-6 rounded-full bg-neon-green/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-green">ML</div>
+                  </div>
+                  <div class="opacity-0 group-hover:opacity-100 text-neon-purple text-[11px] font-mono font-bold flex items-center gap-1 transition-opacity">OPEN <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
+                </div>
+                <!-- Row 3 -->
+                <div class="project-row group" onclick="openProject('social-series')">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-green/20 to-neon-cyan/20 border border-neon-green/20 flex items-center justify-center flex-shrink-0">
+                      <svg class="w-5 h-5 text-neon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-[13px] font-bold tracking-tight">Social Content Series</div>
+                      <div class="text-[10px] font-mono text-white/40 mt-0.5">NOVA FINTECH · CHI · 4/12 steps</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-neon-green pulse-dot text-neon-green"></div><span class="text-[10px] font-mono font-bold text-neon-mint">LIVE</span></div>
+                  <div class="flex items-center gap-2.5">
+                    <div class="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div class="h-full bg-gradient-to-r from-neon-purple to-neon-blue rounded-full" style="width:32%"></div>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold text-white/70">32%</span>
+                  </div>
+                  <div class="flex -space-x-1.5">
+                    <div class="w-6 h-6 rounded-full bg-neon-purple/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-purple">JR</div>
+                    <div class="w-6 h-6 rounded-full bg-neon-green/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-green">ML</div>
+                  </div>
+                  <div class="opacity-0 group-hover:opacity-100 text-neon-purple text-[11px] font-mono font-bold flex items-center gap-1 transition-opacity">OPEN <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
+                </div>
+                <!-- Row 4 -->
+                <div class="project-row group" onclick="openProject('event-kit')">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-red/20 to-neon-pink/20 border border-neon-red/20 flex items-center justify-center flex-shrink-0">
+                      <svg class="w-5 h-5 text-neon-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-[13px] font-bold tracking-tight">Annual Conference Kit</div>
+                      <div class="text-[10px] font-mono text-white/40 mt-0.5">TERRAGROUP · ATL · 6/13 steps</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-neon-red"></div><span class="text-[10px] font-mono font-bold text-neon-red">HOLD</span></div>
+                  <div class="flex items-center gap-2.5">
+                    <div class="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div class="h-full bg-neon-red/60 rounded-full" style="width:45%"></div>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold text-white/70">45%</span>
+                  </div>
+                  <div class="flex -space-x-1.5">
+                    <div class="w-6 h-6 rounded-full bg-neon-purple/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-purple">JR</div>
+                    <div class="w-6 h-6 rounded-full bg-neon-pink/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-pink">DW</div>
+                  </div>
+                  <div class="opacity-0 group-hover:opacity-100 text-neon-purple text-[11px] font-mono font-bold flex items-center gap-1 transition-opacity">OPEN <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
+                </div>
+                <!-- Row 5 -->
+                <div class="project-row group" onclick="openProject('brand-refresh')">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-cyan/20 to-neon-blue/20 border border-neon-cyan/20 flex items-center justify-center flex-shrink-0">
+                      <svg class="w-5 h-5 text-neon-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-[13px] font-bold tracking-tight">OOH Campaign Q3</div>
+                      <div class="text-[10px] font-mono text-white/40 mt-0.5">VANTAGE RETAIL · LA · 7/13 steps</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-neon-green pulse-dot text-neon-green"></div><span class="text-[10px] font-mono font-bold text-neon-mint">LIVE</span></div>
+                  <div class="flex items-center gap-2.5">
+                    <div class="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div class="h-full bg-gradient-to-r from-neon-cyan to-neon-green rounded-full" style="width:55%"></div>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold text-white/70">55%</span>
+                  </div>
+                  <div class="flex -space-x-1.5">
+                    <div class="w-6 h-6 rounded-full bg-neon-pink/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-pink">DW</div>
+                    <div class="w-6 h-6 rounded-full bg-neon-blue/30 border-2 border-ink-700 flex items-center justify-center text-[8px] font-bold text-neon-blue">SK</div>
+                  </div>
+                  <div class="opacity-0 group-hover:opacity-100 text-neon-purple text-[11px] font-mono font-bold flex items-center gap-1 transition-opacity">OPEN <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- OFFICES MAP -->
+            <div class="col-span-4 glass rounded-2xl p-6 lift glass-glow">
+              <div class="flex items-center justify-between mb-5">
+                <div>
+                  <h3 class="text-[15px] font-bold">Office Network</h3>
+                  <div class="text-[11px] text-white/40 font-mono mt-1">4 locations · 12 active</div>
+                </div>
+              </div>
+
+              <!-- US Map -->
+              <div class="relative bg-gradient-to-br from-ink-700/40 to-ink-800/40 rounded-2xl p-3 border border-white/[0.04] overflow-hidden">
+                <!-- Glow background -->
+                <div class="absolute inset-0 bg-gradient-radial from-neon-purple/5 via-transparent to-transparent"></div>
+                <svg class="w-full h-auto block relative" viewBox="0 0 480 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- US silhouette - dot matrix style -->
+                  <g id="us-dots"></g>
+                  <!-- Connection lines between offices -->
+                  <line x1="74" y1="170" x2="290" y2="116" stroke="url(#mapLine1)" stroke-width="0.5" stroke-dasharray="2 3" opacity="0.4"/>
+                  <line x1="290" y1="116" x2="392" y2="108" stroke="url(#mapLine2)" stroke-width="0.5" stroke-dasharray="2 3" opacity="0.4"/>
+                  <line x1="290" y1="116" x2="336" y2="184" stroke="url(#mapLine3)" stroke-width="0.5" stroke-dasharray="2 3" opacity="0.4"/>
+                  <line x1="74" y1="170" x2="336" y2="184" stroke="url(#mapLine4)" stroke-width="0.5" stroke-dasharray="2 3" opacity="0.3"/>
+                  <defs>
+                    <linearGradient id="mapLine1"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#10B981"/></linearGradient>
+                    <linearGradient id="mapLine2"><stop offset="0%" stop-color="#10B981"/><stop offset="100%" stop-color="#A78BFA"/></linearGradient>
+                    <linearGradient id="mapLine3"><stop offset="0%" stop-color="#10B981"/><stop offset="100%" stop-color="#EC4899"/></linearGradient>
+                    <linearGradient id="mapLine4"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#EC4899"/></linearGradient>
+                  </defs>
+                </svg>
+                <!-- Office dots (absolute positioned) -->
+                <div class="absolute" style="left:calc(81.6% + 12px);top:calc(41.4% + 12px);transform:translate(-50%,-50%)">
+                  <div class="map-pulse-ring" style="width:32px;height:32px;background:rgba(167,139,250,0.3)"></div>
+                  <div class="map-pulse-ring" style="width:24px;height:24px;background:rgba(167,139,250,0.2);animation-delay:0.7s"></div>
+                  <div class="relative w-4 h-4 rounded-full bg-gradient-to-br from-neon-purple to-neon-violet glow-purple flex items-center justify-center text-[8px] font-extrabold text-white">5</div>
+                </div>
+                <div class="absolute" style="left:calc(15.4% + 12px);top:calc(60.7% + 12px);transform:translate(-50%,-50%)">
+                  <div class="map-pulse-ring" style="width:32px;height:32px;background:rgba(59,130,246,0.3);animation-delay:0.3s"></div>
+                  <div class="relative w-4 h-4 rounded-full bg-gradient-to-br from-neon-blue to-neon-cyan glow-blue flex items-center justify-center text-[8px] font-extrabold text-white">3</div>
+                </div>
+                <div class="absolute" style="left:calc(60.4% + 12px);top:calc(41.4% + 12px);transform:translate(-50%,-50%)">
+                  <div class="map-pulse-ring" style="width:30px;height:30px;background:rgba(16,185,129,0.3);animation-delay:1s"></div>
+                  <div class="relative w-4 h-4 rounded-full bg-gradient-to-br from-neon-green to-neon-mint glow-green flex items-center justify-center text-[8px] font-extrabold text-ink-900">2</div>
+                </div>
+                <div class="absolute" style="left:calc(70% + 12px);top:calc(65.7% + 12px);transform:translate(-50%,-50%)">
+                  <div class="map-pulse-ring" style="width:30px;height:30px;background:rgba(236,72,153,0.3);animation-delay:1.4s"></div>
+                  <div class="relative w-4 h-4 rounded-full bg-gradient-to-br from-neon-pink to-neon-red glow-pink flex items-center justify-center text-[8px] font-extrabold text-white">2</div>
+                </div>
+              </div>
+
+              <!-- Office list -->
+              <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="office-card group" data-office="nyc">
+                  <div class="w-2 h-2 rounded-full bg-neon-purple glow-purple"></div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[11px] font-bold">New York</div>
+                    <div class="text-[9px] font-mono text-white/40">Midtown</div>
+                  </div>
+                  <div class="text-[18px] font-extrabold text-neon-purple">5</div>
+                </div>
+                <div class="office-card group" data-office="la">
+                  <div class="w-2 h-2 rounded-full bg-neon-blue glow-blue"></div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[11px] font-bold">Los Angeles</div>
+                    <div class="text-[9px] font-mono text-white/40">W. Hollywood</div>
+                  </div>
+                  <div class="text-[18px] font-extrabold text-neon-blue">3</div>
+                </div>
+                <div class="office-card group" data-office="chi">
+                  <div class="w-2 h-2 rounded-full bg-neon-green glow-green"></div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[11px] font-bold">Chicago</div>
+                    <div class="text-[9px] font-mono text-white/40">River North</div>
+                  </div>
+                  <div class="text-[18px] font-extrabold text-neon-green">2</div>
+                </div>
+                <div class="office-card group" data-office="atl">
+                  <div class="w-2 h-2 rounded-full bg-neon-pink glow-pink"></div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[11px] font-bold">Atlanta</div>
+                    <div class="text-[9px] font-mono text-white/40">Midtown</div>
+                  </div>
+                  <div class="text-[18px] font-extrabold text-neon-pink">2</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- FOURTH ROW -->
+          <div class="grid grid-cols-12 gap-4 pb-8">
+
+            <!-- TEAM WORKLOAD -->
+            <div class="col-span-4 glass rounded-2xl p-6 lift glass-glow">
+              <div class="flex items-center justify-between mb-5">
+                <div>
+                  <h3 class="text-[15px] font-bold">Team Workload</h3>
+                  <div class="text-[11px] text-white/40 font-mono mt-1">Capacity utilization</div>
+                </div>
+              </div>
+              <div class="space-y-3">
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-2">
+                      <div class="w-7 h-7 rounded-full bg-neon-purple/30 flex items-center justify-center text-[9px] font-bold text-neon-purple">JR</div>
+                      <div>
+                        <div class="text-[12px] font-bold">Jordan Reyes</div>
+                        <div class="text-[9px] font-mono text-white/40">ACCOUNT LEAD</div>
+                      </div>
+                    </div>
+                    <span class="text-[12px] font-mono font-bold text-neon-amber">88%</span>
+                  </div>
+                  <div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-neon-purple to-neon-amber" style="width:88%"></div></div>
+                </div>
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-2">
+                      <div class="w-7 h-7 rounded-full bg-neon-blue/30 flex items-center justify-center text-[9px] font-bold text-neon-blue">SK</div>
+                      <div>
+                        <div class="text-[12px] font-bold">Sara Kim</div>
+                        <div class="text-[9px] font-mono text-white/40">STRATEGIST</div>
+                      </div>
+                    </div>
+                    <span class="text-[12px] font-mono font-bold text-neon-mint">72%</span>
+                  </div>
+                  <div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-neon-blue to-neon-green" style="width:72%"></div></div>
+                </div>
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-2">
+                      <div class="w-7 h-7 rounded-full bg-neon-green/30 flex items-center justify-center text-[9px] font-bold text-neon-green">ML</div>
+                      <div>
+                        <div class="text-[12px] font-bold">Marco Liu</div>
+                        <div class="text-[9px] font-mono text-white/40">CREATIVE DIRECTOR</div>
+                      </div>
+                    </div>
+                    <span class="text-[12px] font-mono font-bold text-neon-red">95%</span>
+                  </div>
+                  <div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-neon-amber to-neon-red" style="width:95%"></div></div>
+                </div>
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-2">
+                      <div class="w-7 h-7 rounded-full bg-neon-pink/30 flex items-center justify-center text-[9px] font-bold text-neon-pink">DW</div>
+                      <div>
+                        <div class="text-[12px] font-bold">Daniel Wells</div>
+                        <div class="text-[9px] font-mono text-white/40">DESIGNER</div>
+                      </div>
+                    </div>
+                    <span class="text-[12px] font-mono font-bold text-neon-mint">61%</span>
+                  </div>
+                  <div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-neon-pink to-neon-mint" style="width:61%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ACTIVITY FEED -->
+            <div class="col-span-5 glass rounded-2xl p-6 lift glass-glow">
+              <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-[15px] font-bold">Activity Feed</h3>
+                  <div class="w-1.5 h-1.5 rounded-full bg-neon-green pulse-dot text-neon-green"></div>
+                </div>
+                <button class="text-[11px] font-mono text-white/50 hover:text-white">View all →</button>
+              </div>
+              <div class="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                <div class="activity-feed-item">
+                  <div class="w-7 h-7 rounded-lg bg-neon-green/20 border border-neon-green/30 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-3.5 h-3.5 text-neon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[12px] leading-snug"><span class="font-bold text-neon-purple">Jordan</span> approved <span class="font-bold">Brand Strategy</span> for Meridian Health</div>
+                    <div class="text-[10px] font-mono text-white/40 mt-1">2 MIN AGO · NYC</div>
+                  </div>
+                </div>
+                <div class="activity-feed-item">
+                  <div class="w-7 h-7 rounded-lg bg-neon-blue/20 border border-neon-blue/30 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-3.5 h-3.5 text-neon-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[12px] leading-snug"><span class="font-bold text-neon-blue">Marco</span> uploaded <span class="font-bold">Concept C mockups</span> · 4 files</div>
+                    <div class="text-[10px] font-mono text-white/40 mt-1">28 MIN AGO · LA</div>
+                  </div>
+                </div>
+                <div class="activity-feed-item">
+                  <div class="w-7 h-7 rounded-lg bg-neon-amber/20 border border-neon-amber/30 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-3.5 h-3.5 text-neon-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[12px] leading-snug">Approval gate triggered · <span class="font-bold">Cascade v3.0</span> awaiting sign-off</div>
+                    <div class="text-[10px] font-mono text-white/40 mt-1">1 HR AGO · NYC</div>
+                  </div>
+                </div>
+                <div class="activity-feed-item">
+                  <div class="w-7 h-7 rounded-lg bg-neon-purple/20 border border-neon-purple/30 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-3.5 h-3.5 text-neon-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[12px] leading-snug"><span class="font-bold text-neon-blue">Sara</span> added <span class="font-bold">3 team members</span> to Social Series</div>
+                    <div class="text-[10px] font-mono text-white/40 mt-1">3 HR AGO · CHI</div>
+                  </div>
+                </div>
+                <div class="activity-feed-item">
+                  <div class="w-7 h-7 rounded-lg bg-neon-red/20 border border-neon-red/30 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-3.5 h-3.5 text-neon-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="22" x2="4" y2="15"/><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[12px] leading-snug">TerraGroup Conference Kit set to <span class="font-bold text-neon-red">ON HOLD</span></div>
+                    <div class="text-[10px] font-mono text-white/40 mt-1">YESTERDAY · ATL</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PROJECT FILES -->
+            <div class="col-span-3 glass rounded-2xl p-6 lift glass-glow">
+              <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-[15px] font-bold">Project Files</h3>
+                  <span class="text-[10px] font-mono font-bold text-neon-purple bg-neon-purple/15 px-2 py-0.5 rounded-md">34</span>
+                </div>
+                <button class="text-[11px] font-mono font-bold text-neon-purple hover:text-white flex items-center gap-1">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                  Share
+                </button>
+              </div>
+
+              <!-- File 1: latest upload -->
+              <div class="mb-4">
+                <div class="flex items-center gap-2.5 mb-2">
+                  <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-purple to-neon-pink flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">ML</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[12px] font-bold leading-tight">Marco Liu</div>
+                    <div class="text-[9px] font-mono text-white/40 mt-0.5">TODAY · 5:25 PM</div>
+                  </div>
+                </div>
+                <div class="text-[11px] text-white/70 leading-snug mb-2">
+                  Added a file to <span class="text-neon-purple font-bold">Brand Refresh</span>
+                </div>
+                <div class="flex items-center justify-between text-[9px] font-mono text-white/40 mb-3">
+                  <span>Weekly time</span>
+                  <span class="text-white/70 font-bold">3:12:59</span>
+                </div>
+                <!-- File card -->
+                <div class="group flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-neon-purple/10 to-neon-violet/5 border border-neon-purple/20 hover:border-neon-purple/40 cursor-pointer transition-all">
+                  <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-neon-violet to-neon-purple flex items-center justify-center flex-shrink-0 glow-purple">
+                    <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5A3.5 3.5 0 018.5 2H12v7H8.5A3.5 3.5 0 015 5.5zM12 2h3.5a3.5 3.5 0 110 7H12V2zM12 16.5a3.5 3.5 0 113.5-3.5H12v3.5zM5 13a3.5 3.5 0 003.5-3.5H5V13zM5 20.5A3.5 3.5 0 008.5 17H12v-.5h3.5a3.5 3.5 0 11-3.5 3.5z" opacity="0.9"/></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[12px] font-bold truncate">Logo_variants.fig</div>
+                    <div class="text-[9px] font-mono text-white/40 mt-0.5 truncate">fig/me-575s54d5</div>
+                  </div>
+                  <button class="w-8 h-8 rounded-lg bg-ink-900/60 hover:bg-neon-purple flex items-center justify-center text-white flex-shrink-0 transition-colors">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- File 2: earlier -->
+              <div class="pt-3 border-t border-white/[0.05]">
+                <div class="flex items-center gap-2.5 mb-2">
+                  <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-blue to-neon-cyan flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">SK</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[12px] font-bold leading-tight">Sara Kim</div>
+                    <div class="text-[9px] font-mono text-white/40 mt-0.5">YESTERDAY · 5:25 PM</div>
+                  </div>
+                </div>
+                <div class="text-[11px] text-white/70 leading-snug mb-2">
+                  Added a file to <span class="text-neon-blue font-bold">Cascade v3.0</span>
+                </div>
+                <div class="group flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.15] cursor-pointer transition-all">
+                  <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-neon-blue to-neon-cyan flex items-center justify-center flex-shrink-0 glow-blue">
+                    <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[12px] font-bold truncate">Copy_deck_v3.docx</div>
+                    <div class="text-[9px] font-mono text-white/40 mt-0.5 truncate">doc12/pe-575s54d5</div>
+                  </div>
+                  <button class="w-8 h-8 rounded-lg bg-ink-900/60 hover:bg-neon-blue flex items-center justify-center text-white flex-shrink-0 transition-colors">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ═══════════ CANVAS VIEW ═══════════ -->
+      <!-- MODULE VIEW -->
+      <div id="view-module" class="absolute inset-0 hidden overflow-y-auto canvas-scroll">
+        <div class="px-8 py-8 w-full">
+          <div class="flex items-end justify-between mb-7">
+            <div>
+              <div class="text-[11px] font-mono font-semibold text-white/40 mb-2 tracking-wider" id="module-kicker">WORKSPACE</div>
+              <h1 class="text-4xl font-extrabold tracking-tight leading-none">
+                <span class="text-gradient-mix" id="module-title">Projects</span>
+              </h1>
+              <div class="text-[13px] text-white/50 mt-3 font-medium" id="module-subtitle">Current production workspace</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <button onclick="showToast('Saved module view filter')" class="flex items-center gap-2 px-4 h-10 rounded-xl glass border-white/[0.06] hover:border-white/[0.12] text-[13px] font-semibold transition-colors">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
+                Filter
+              </button>
+              <button onclick="addNewMenu()" class="flex items-center gap-2 px-4 h-10 rounded-xl bg-gradient-to-br from-neon-violet to-neon-purple text-white font-semibold text-[13px] glow-purple hover:scale-[1.02] active:scale-95 transition-transform">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-12 gap-6 mb-6" id="module-stats"></div>
+
+          <div class="grid grid-cols-12 gap-6">
+            <section class="col-span-8 glass rounded-2xl p-5 glass-glow relative overflow-hidden">
+              <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-purple to-transparent"></div>
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-[15px] font-bold tracking-tight" id="module-main-title">Work Queue</h3>
+                  <div class="text-[11px] text-white/40 mt-1" id="module-main-subtitle">Live items sorted by urgency</div>
+                </div>
+                <div class="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-lg p-0.5">
+                  <button class="module-tab active" onclick="setModuleTab(this)">Active</button>
+                  <button class="module-tab" onclick="setModuleTab(this)">Review</button>
+                  <button class="module-tab" onclick="setModuleTab(this)">Archived</button>
+                </div>
+              </div>
+              <div id="module-main-list" class="space-y-3"></div>
+            </section>
+
+            <aside class="col-span-4 space-y-6">
+              <section class="glass rounded-2xl p-5 glass-glow">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-[15px] font-bold tracking-tight" id="module-side-title">Focus</h3>
+                  <span class="text-[10px] font-mono font-bold text-neon-mint bg-neon-green/10 border border-neon-green/20 px-2 py-1 rounded-md">LIVE</span>
+                </div>
+                <div id="module-side-list" class="space-y-3"></div>
+              </section>
+              <section class="glass rounded-2xl p-5 glass-glow">
+                <div class="text-[10px] font-mono font-bold text-white/40 tracking-wider mb-3">OPERATIONS</div>
+                <div class="grid grid-cols-2 gap-3">
+                  <button onclick="showToast('Export queued')" class="module-action">Export</button>
+                  <button onclick="showToast('Automation panel opened')" class="module-action">Automate</button>
+                  <button onclick="showToast('Shared with active team')" class="module-action">Share</button>
+                  <button onclick="showToast('View pinned to sidebar')" class="module-action">Pin</button>
+                </div>
+              </section>
+            </aside>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-canvas" class="absolute inset-0 hidden flex-col">
+
+        <!-- CANVAS TOPBAR -->
+        <div class="h-14 glass border-b border-white/[0.04] flex items-center px-6 gap-3 flex-shrink-0">
+          <button onclick="showDash()" class="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] flex items-center justify-center text-white/70 transition-colors">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="w-px h-5 bg-white/10"></div>
+          <div>
+            <div class="text-[14px] font-bold tracking-tight" id="canvas-proj-name">Brand Refresh Campaign</div>
+            <div class="text-[10px] font-mono text-white/40 mt-0.5" id="canvas-proj-meta">MERIDIAN HEALTH · NYC · 9/13 STEPS · 68% COMPLETE</div>
+          </div>
+          <div class="flex items-center gap-1.5 ml-2 px-3 py-1 rounded-full bg-neon-green/10 border border-neon-green/20" id="canvas-proj-status">
+            <div class="w-1.5 h-1.5 rounded-full bg-neon-green pulse-dot text-neon-green"></div>
+            <span class="text-[10px] font-mono font-bold text-neon-mint tracking-wider">LIVE</span>
+          </div>
+
+          <div class="flex-1"></div>
+
+          <!-- View toggles -->
+          <div class="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-lg p-0.5">
+            <button class="ctool-active flex items-center gap-1.5 text-[11px] font-mono font-bold px-3 py-1.5 rounded-md bg-neon-purple/20 text-neon-purple">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="6.4" y1="6.4" x2="9.6" y2="9.6"/><line x1="17.6" y1="6.4" x2="14.4" y2="9.6"/><line x1="6.4" y1="17.6" x2="9.6" y2="14.4"/><line x1="17.6" y1="17.6" x2="14.4" y2="14.4"/></svg>
+              NODES
+            </button>
+            <button class="flex items-center gap-1.5 text-[11px] font-mono font-bold px-3 py-1.5 rounded-md text-white/40 hover:text-white">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              LIST
+            </button>
+            <button class="flex items-center gap-1.5 text-[11px] font-mono font-bold px-3 py-1.5 rounded-md text-white/40 hover:text-white">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+              GANTT
+            </button>
+          </div>
+
+          <div class="w-px h-5 bg-white/10"></div>
+
+          <button onclick="addWorkflowSection()" class="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] text-[11px] font-mono font-bold text-white/70 transition-colors">
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            ADD SECTION
+          </button>
+          <button onclick="addCanvasNode()" class="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] text-[11px] font-mono font-bold text-white/70 transition-colors">ADD NODE</button>
+          <button onclick="toggleEdgeMode()" id="edge-mode-btn" class="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-neon-purple/10 border border-neon-purple/20 hover:bg-neon-purple/20 text-[11px] font-mono font-bold text-neon-purple transition-colors">CONNECT</button>
+          <input id="edge-color" type="color" value="#A78BFA" class="w-8 h-8 rounded-lg bg-transparent border border-white/[0.08] p-0.5">
+          <button onclick="toggleEdgeStyle()" id="edge-style-btn" class="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] text-[11px] font-mono font-bold text-white/70 transition-colors">CURVE</button>
+          <button onclick="cleanupCanvas()" class="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] text-[11px] font-mono font-bold text-white/70 transition-colors">CLEAN UP</button>
+          <button onclick="startFromScratch()" class="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-neon-red/10 border border-neon-red/20 hover:bg-neon-red/20 text-[11px] font-mono font-bold text-neon-red transition-colors">START BLANK</button>
+
+          <button onclick="toggleCanvasTheme()" id="canvas-theme-btn" class="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] text-[11px] font-mono font-bold text-white/70 transition-colors">DARK</button>
+
+          <!-- Collaborators -->
+          <div class="flex -space-x-1.5">
+            <div class="w-7 h-7 rounded-full bg-neon-purple/30 border-2 border-ink-900 flex items-center justify-center text-[9px] font-bold text-neon-purple ring-2 ring-neon-green ring-offset-0">JR</div>
+            <div class="w-7 h-7 rounded-full bg-neon-blue/30 border-2 border-ink-900 flex items-center justify-center text-[9px] font-bold text-neon-blue">SK</div>
+            <div class="w-7 h-7 rounded-full bg-neon-green/30 border-2 border-ink-900 flex items-center justify-center text-[9px] font-bold text-neon-green">ML</div>
+          </div>
+
+          <button class="flex items-center gap-1.5 px-4 h-8 rounded-lg bg-gradient-to-br from-neon-violet to-neon-purple text-white text-[11px] font-mono font-bold glow-purple hover:scale-[1.02] transition-transform">
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            SHARE
+          </button>
+        </div>
+
+        <!-- CANVAS WORKSPACE -->
+        <div class="flex-1 relative overflow-hidden cursor-grab canvas-theme-dark" id="canvas-workspace">
+
+          <!-- BG Grid -->
+          <div class="absolute inset-0 pointer-events-none canvas-grid-bg"></div>
+          <!-- Center vignette -->
+          <div class="absolute inset-0 pointer-events-none canvas-vignette"></div>
+
+          <!-- Pannable container -->
+          <div class="absolute inset-0 overflow-auto canvas-scroll" id="canvas-scroll">
+            <div class="relative" style="width:9000px;height:6000px;transform-origin:0 0" id="canvas-pan">
+
+              <!-- ═══ WORKFLOW REGIONS ═══ -->
+              <div class="workflow-region" style="left:20px;top:60px;width:540px;height:540px">
+                <div class="workflow-region-label" style="color:#A78BFA">// STRATEGY</div>
+              </div>
+              <div class="workflow-region" style="left:600px;top:60px;width:340px;height:340px">
+                <div class="workflow-region-label" style="color:#3B82F6">// CREATIVE</div>
+              </div>
+              <div class="workflow-region" style="left:980px;top:60px;width:540px;height:540px">
+                <div class="workflow-region-label" style="color:#EC4899">// PRODUCTION</div>
+              </div>
+              <div class="workflow-region" style="left:1560px;top:200px;width:540px;height:400px">
+                <div class="workflow-region-label" style="color:#10B981">// DELIVERY</div>
+              </div>
+
+              <!-- ═══ SVG CONNECTIONS ═══ -->
+              <svg class="absolute inset-0 pointer-events-none" style="width:2600px;height:1400px">
+                <defs>
+                  <marker id="arr-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                    <path d="M1 1L9 5L1 9" fill="none" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round"/>
+                  </marker>
+                  <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                    <path d="M1 1L9 5L1 9" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/>
+                  </marker>
+                  <marker id="arr-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                    <path d="M1 1L9 5L1 9" fill="none" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+                  </marker>
+                  <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                    <path d="M1 1L9 5L1 9" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+                  </marker>
+                  <filter id="glow-edge"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                  <linearGradient id="edge-active" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#A78BFA"/>
+                    <stop offset="100%" stop-color="#EC4899"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- DONE: Brief → Strategy -->
+                <path d="M 250 200 C 290 200 295 200 305 200" fill="none" stroke="#10B981" stroke-width="2" opacity="0.7" marker-end="url(#arr-green)" filter="url(#glow-edge)"/>
+                <!-- DONE: Brief → Audience -->
+                <path d="M 160 240 C 220 240 230 410 305 410" fill="none" stroke="#10B981" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.45" marker-end="url(#arr-green)"/>
+                <!-- DONE: Strategy → Creative Brief -->
+                <path d="M 540 200 C 580 200 585 200 605 200" fill="none" stroke="#10B981" stroke-width="2" opacity="0.7" marker-end="url(#arr-green)" filter="url(#glow-edge)"/>
+                <!-- DONE: Audience → Creative Brief -->
+                <path d="M 540 410 C 580 410 590 270 605 220" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-dasharray="5 5" opacity="0.35" marker-end="url(#arr-blue)"/>
+
+                <!-- ACTIVE: Creative Brief → Concept Dev (animated) -->
+                <path d="M 845 200 C 920 200 940 290 1010 320" fill="none" stroke="url(#edge-active)" stroke-width="2.5" stroke-dasharray="10 6" opacity="0.95" marker-end="url(#arr-purple)" filter="url(#glow-edge)" class="dash-flow"/>
+
+                <!-- GATE: Concept → Approval Gate -->
+                <path d="M 1230 360 C 1290 360 1295 470 1310 490" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="7 5" opacity="0.75" marker-end="url(#arr-amber)" filter="url(#glow-edge)"/>
+
+                <!-- Gate → Production -->
+                <path d="M 1422 530 C 1460 530 1465 530 1495 530" fill="none" stroke="#444" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.5"/>
+
+                <!-- Asset → Concept Dev -->
+                <path d="M 460 720 C 600 720 800 380 1010 360" fill="none" stroke="#A78BFA" stroke-width="1" stroke-dasharray="3 4" opacity="0.3" marker-end="url(#arr-purple)"/>
+                <path d="M 1090 720 C 1090 600 1090 500 1090 400" fill="none" stroke="#3B82F6" stroke-width="1" stroke-dasharray="3 4" opacity="0.3" marker-end="url(#arr-blue)"/>
+
+                <!-- Production → AI Gen -->
+                <path d="M 1720 530 C 1750 530 1755 470 1780 460" fill="none" stroke="#444" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.5"/>
+
+                <!-- Production → Final Approval -->
+                <path d="M 1720 570 C 1750 570 1755 700 1780 720" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="7 5" opacity="0.7" marker-end="url(#arr-amber)" filter="url(#glow-edge)"/>
+
+                <!-- Final Approval → Delivery -->
+                <path d="M 1995 750 C 2030 750 2035 380 2060 380" fill="none" stroke="#10B981" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.5" marker-end="url(#arr-green)"/>
+
+                <!-- Final Approval → Presentation -->
+                <path d="M 1995 780 C 2030 780 2035 540 2060 540" fill="none" stroke="#10B981" stroke-width="2" opacity="0.7" marker-end="url(#arr-green)" filter="url(#glow-edge)"/>
+              </svg>
+
+              <!-- ═══ NODES ═══ -->
+
+              <!-- CLIENT BRIEF -->
+              <div class="fn-node fn-brief" style="left:40px;top:140px;width:220px" onclick="openDetail('brief')">
+                <div class="fn-node-head">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type" style="color:#A78BFA">↑ INPUT · BRIEF</div>
+                    <div class="fn-dot bg-neon-green pulse-dot text-neon-green"></div>
+                  </div>
+                  <div class="fn-title">Client Brief</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-purple/30 text-neon-purple">JR</div>
+                  </div>
+                  <p class="fn-desc">Brief + brand guidelines PDF received from Meridian Health</p>
+                  <div class="fn-prog-row">
+                    <div class="fn-prog-trk"><div class="fn-prog-fl" style="width:100%;background:linear-gradient(90deg,#10B981,#34D399)"></div></div>
+                    <span class="text-[9px] font-mono font-bold text-neon-green">100%</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1 mt-2.5">
+                    <span class="fn-tag">kickoff</span>
+                    <span class="fn-tag">PDF · 34p</span>
+                    <span class="fn-tag">📎 1</span>
+                  </div>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-white/40">MAY 2</span>
+                  <span class="fn-badge-ok">✓ APPROVED</span>
+                </div>
+              </div>
+
+              <!-- BRAND STRATEGY -->
+              <div class="fn-node" style="left:308px;top:140px;width:230px" onclick="openDetail('strategy')">
+                <div class="fn-node-head">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type text-neon-green">✓ STRATEGY</div>
+                    <div class="fn-dot bg-neon-green"></div>
+                  </div>
+                  <div class="fn-title">Brand Strategy</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-blue/30 text-neon-blue">SK</div>
+                    <div class="fn-av bg-neon-purple/30 text-neon-purple">JR</div>
+                  </div>
+                  <p class="fn-desc">Positioning, messaging pillars, tone of voice locked</p>
+                  <div class="fn-prog-row">
+                    <div class="fn-prog-trk"><div class="fn-prog-fl" style="width:100%;background:linear-gradient(90deg,#10B981,#34D399)"></div></div>
+                    <span class="text-[9px] font-mono font-bold text-neon-green">100%</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1 mt-2.5">
+                    <span class="fn-tag">strategy</span>
+                    <span class="fn-tag">💬 12</span>
+                    <span class="fn-tag">📎 3</span>
+                  </div>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-white/40">MAY 8</span>
+                  <span class="fn-badge-ok">✓ APPROVED</span>
+                </div>
+              </div>
+
+              <!-- AUDIENCE RESEARCH -->
+              <div class="fn-node" style="left:308px;top:360px;width:230px" onclick="openDetail('audience')">
+                <div class="fn-node-head">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type text-neon-green">✓ RESEARCH</div>
+                    <div class="fn-dot bg-neon-green"></div>
+                  </div>
+                  <div class="fn-title">Audience Research</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-green/30 text-neon-green">ML</div>
+                  </div>
+                  <p class="fn-desc">Persona mapping, competitor audit, market sizing complete</p>
+                  <div class="flex flex-wrap gap-1 mt-2.5">
+                    <span class="fn-tag">research</span>
+                    <span class="fn-tag">personas</span>
+                  </div>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-white/40">MAY 9</span>
+                  <span class="fn-badge-ok">✓ APPROVED</span>
+                </div>
+              </div>
+
+              <!-- CREATIVE BRIEF -->
+              <div class="fn-node" style="left:608px;top:140px;width:230px" onclick="openDetail('creative-brief')">
+                <div class="fn-node-head">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type text-neon-green">✓ DOCUMENT</div>
+                    <div class="fn-dot bg-neon-green"></div>
+                  </div>
+                  <div class="fn-title">Creative Brief</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-blue/30 text-neon-blue">SK</div>
+                    <div class="fn-av bg-neon-green/30 text-neon-green">ML</div>
+                  </div>
+                  <p class="fn-desc">Visual direction, copy pillars, deliverables list finalized</p>
+                  <div class="fn-prog-row">
+                    <div class="fn-prog-trk"><div class="fn-prog-fl" style="width:100%;background:linear-gradient(90deg,#10B981,#34D399)"></div></div>
+                    <span class="text-[9px] font-mono font-bold text-neon-green">100%</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1 mt-2.5">
+                    <span class="fn-tag">creative</span>
+                    <span class="fn-tag">copy</span>
+                    <span class="fn-tag">💬 8</span>
+                  </div>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-white/40">MAY 12</span>
+                  <span class="fn-badge-ok">✓ APPROVED</span>
+                </div>
+              </div>
+
+              <!-- CONCEPT DEV (ACTIVE) -->
+              <div class="fn-node node-active fn-active" style="left:1010px;top:260px;width:240px" onclick="openDetail('concepts')" id="node-concepts">
+                <div class="fn-node-head" style="border-left:3px solid #A78BFA;padding-left:13px">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type text-neon-purple">● IN PROGRESS</div>
+                    <div class="fn-dot bg-neon-purple pulse-dot text-neon-purple"></div>
+                  </div>
+                  <div class="fn-title">Concept Development</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-green/30 text-neon-green">ML</div>
+                    <div class="fn-av bg-neon-blue/30 text-neon-blue">SK</div>
+                    <div class="fn-av bg-white/10 text-white/50 text-[8px]">+1</div>
+                  </div>
+                  <p class="fn-desc">3 visual directions in dev · Concept C nearly final</p>
+                  <div class="fn-prog-row">
+                    <div class="fn-prog-trk"><div class="fn-prog-fl" style="width:78%;background:linear-gradient(90deg,#A78BFA,#EC4899)"></div></div>
+                    <span class="text-[9px] font-mono font-bold text-neon-purple">78%</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1 mt-2.5">
+                    <span class="fn-tag">design</span>
+                    <span class="fn-tag">visual</span>
+                    <span class="fn-tag">💬 24</span>
+                    <span class="fn-tag">📎 12</span>
+                  </div>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-neon-amber">DUE MAY 20</span>
+                  <span class="fn-badge-pending">⏳ IN REVIEW</span>
+                </div>
+              </div>
+
+              <!-- APPROVAL GATE 1 -->
+              <div class="fn-node fn-gate" style="left:1310px;top:480px;width:215px" onclick="openDetail('approval1')">
+                <div class="fn-node-head">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type text-neon-amber">⟳ APPROVAL GATE</div>
+                    <div class="fn-dot bg-neon-amber pulse-dot text-neon-amber"></div>
+                  </div>
+                  <div class="fn-title">Concept Sign-off</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-purple/30 text-neon-purple">JR</div>
+                  </div>
+                  <p class="fn-desc">Client approval required before production phase begins</p>
+                  <div class="mt-2 px-2.5 py-1.5 rounded-md bg-neon-amber/10 border border-neon-amber/20 text-[10px] font-mono text-neon-amber">⚠ Waiting 2 days</div>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-white/40">TRIGGERED</span>
+                  <span class="fn-badge-pending">⏳ PENDING</span>
+                </div>
+              </div>
+
+              <!-- PRODUCTION -->
+              <div class="fn-node" style="left:1495px;top:480px;width:225px" onclick="openDetail('production')">
+                <div class="fn-node-head">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type text-white/30">○ PRODUCTION</div>
+                    <div class="fn-dot bg-white/20"></div>
+                  </div>
+                  <div class="fn-title">Final Production</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-green/30 text-neon-green">ML</div>
+                    <div class="fn-av bg-neon-blue/30 text-neon-blue">SK</div>
+                  </div>
+                  <p class="fn-desc">All deliverables, print-ready & digital files</p>
+                  <div class="fn-prog-row">
+                    <div class="fn-prog-trk"><div class="fn-prog-fl" style="width:0%;background:#444"></div></div>
+                    <span class="text-[9px] font-mono font-bold text-white/30">0%</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1 mt-2.5">
+                    <span class="fn-tag">production</span>
+                    <span class="fn-tag">files</span>
+                  </div>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-white/40">BLOCKED</span>
+                  <span class="fn-badge-wait">⊘ BLOCKED</span>
+                </div>
+              </div>
+
+              <!-- AI GENERATION -->
+              <div class="fn-node fn-ai" style="left:1780px;top:340px;width:215px" onclick="openDetail('ai-gen')">
+                <div class="fn-node-head" style="background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(236,72,153,0.05))">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type" style="color:#EC4899">✦ AI GENERATION</div>
+                    <div class="fn-dot bg-neon-pink"></div>
+                  </div>
+                  <div class="fn-title">AI Asset Variants</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-pink/30 text-neon-pink">AI</div>
+                    <div class="fn-av bg-neon-green/30 text-neon-green">ML</div>
+                  </div>
+                  <p class="fn-desc">Auto-generate 24 social variants from approved concepts</p>
+                  <div class="flex flex-wrap gap-1 mt-2.5">
+                    <span class="fn-tag" style="background:rgba(236,72,153,0.15);color:#EC4899">✦ generative</span>
+                    <span class="fn-tag">24 variants</span>
+                  </div>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-white/40">QUEUED</span>
+                  <span class="fn-badge-wait">⊘ WAITING</span>
+                </div>
+              </div>
+
+              <!-- ASSET 1: LOGO -->
+              <div class="fn-node fn-asset" style="left:320px;top:650px;width:160px" onclick="openDetail('asset1')">
+                <div class="h-16 rounded-t-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,rgba(167,139,250,0.15),rgba(59,130,246,0.15))">🖼️</div>
+                <div class="p-3">
+                  <div class="text-[11px] font-bold">Logo variants.fig</div>
+                  <div class="text-[9px] font-mono text-white/40 mt-0.5">FIGMA · 4 BOARDS · V4</div>
+                  <div class="flex items-center justify-between mt-2">
+                    <div class="flex -space-x-1"><div class="fn-av bg-neon-green/30 text-neon-green" style="width:18px;height:18px;font-size:8px">ML</div></div>
+                    <span class="text-[9px] font-mono text-neon-purple font-bold">↑ MAY 16</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ASSET 2: COPY DECK -->
+              <div class="fn-node fn-asset" style="left:1000px;top:650px;width:160px" onclick="openDetail('asset2')">
+                <div class="h-16 rounded-t-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(16,185,129,0.15))">📄</div>
+                <div class="p-3">
+                  <div class="text-[11px] font-bold">Copy_deck_v3.docx</div>
+                  <div class="text-[9px] font-mono text-white/40 mt-0.5">WORD · 12 PAGES</div>
+                  <div class="flex items-center justify-between mt-2">
+                    <div class="flex -space-x-1"><div class="fn-av bg-neon-blue/30 text-neon-blue" style="width:18px;height:18px;font-size:8px">SK</div></div>
+                    <span class="text-[9px] font-mono text-neon-blue font-bold">↑ MAY 17</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ASSET 3: BRAND PDF -->
+              <div class="fn-node fn-asset" style="left:40px;top:650px;width:160px" onclick="openDetail('asset3')">
+                <div class="h-16 rounded-t-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,rgba(236,72,153,0.15),rgba(245,158,11,0.15))">📋</div>
+                <div class="p-3">
+                  <div class="text-[11px] font-bold">Brand_Guidelines.pdf</div>
+                  <div class="text-[9px] font-mono text-white/40 mt-0.5">PDF · 34 PAGES</div>
+                  <div class="flex items-center justify-between mt-2">
+                    <div class="flex -space-x-1"><div class="fn-av bg-neon-purple/30 text-neon-purple" style="width:18px;height:18px;font-size:8px">JR</div></div>
+                    <span class="text-[9px] font-mono text-neon-green font-bold">SOURCE</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- FINAL APPROVAL GATE -->
+              <div class="fn-node fn-gate" style="left:1780px;top:700px;width:215px" onclick="openDetail('approval2')">
+                <div class="fn-node-head">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type text-neon-amber">⟳ FINAL APPROVAL</div>
+                    <div class="fn-dot bg-white/20"></div>
+                  </div>
+                  <div class="fn-title">Client Final Sign-off</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-purple/30 text-neon-purple">JR</div>
+                  </div>
+                  <p class="fn-desc">Client final sign-off on all deliverables before release</p>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-white/40">NOT STARTED</span>
+                  <span class="fn-badge-wait">⊘ WAITING</span>
+                </div>
+              </div>
+
+              <!-- FINAL DELIVERABLE -->
+              <div class="fn-node fn-milestone" style="left:2060px;top:340px;width:220px" onclick="openDetail('delivery')">
+                <div class="fn-node-head">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type text-neon-green">◆ MILESTONE</div>
+                    <div class="fn-dot bg-white/20"></div>
+                  </div>
+                  <div class="fn-title">Final Deliverables</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-purple/30 text-neon-purple">JR</div>
+                    <div class="fn-av bg-neon-green/30 text-neon-green">ML</div>
+                  </div>
+                  <p class="fn-desc">All asset packages, ready for client handoff</p>
+                  <div class="flex flex-wrap gap-1 mt-2.5">
+                    <span class="fn-tag">delivery</span>
+                    <span class="fn-tag">final</span>
+                  </div>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-neon-green">MAY 30, 2026</span>
+                  <span class="fn-badge-wait">UPCOMING</span>
+                </div>
+              </div>
+
+              <!-- PRESENTATION EXPORT -->
+              <div class="fn-node fn-milestone" style="left:2060px;top:500px;width:220px" onclick="openDetail('presentation')">
+                <div class="fn-node-head">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="fn-type text-neon-green">◆ PRESENTATION</div>
+                    <div class="fn-dot bg-white/20"></div>
+                  </div>
+                  <div class="fn-title">Client Presentation</div>
+                </div>
+                <div class="fn-node-body">
+                  <div class="flex -space-x-1.5 mb-2">
+                    <div class="fn-av bg-neon-purple/30 text-neon-purple">JR</div>
+                    <div class="fn-av bg-neon-blue/30 text-neon-blue">SK</div>
+                  </div>
+                  <p class="fn-desc">Final keynote presentation, exported as PDF + Loom walkthrough</p>
+                  <div class="flex flex-wrap gap-1 mt-2.5">
+                    <span class="fn-tag">presentation</span>
+                    <span class="fn-tag">client-facing</span>
+                  </div>
+                </div>
+                <div class="fn-node-foot">
+                  <span class="text-[9px] font-mono text-neon-green">MAY 30, 2026</span>
+                  <span class="fn-badge-wait">UPCOMING</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- CANVAS LEGEND -->
+          <div class="absolute bottom-6 left-6 glass-strong rounded-xl px-5 py-3 flex items-center gap-5 z-10">
+            <div class="flex items-center gap-2 text-[10px] font-mono font-bold text-white/70">
+              <div class="w-2 h-2 rounded-full bg-neon-green glow-green"></div>COMPLETE
+            </div>
+            <div class="flex items-center gap-2 text-[10px] font-mono font-bold text-white/70">
+              <div class="w-2 h-2 rounded-full bg-neon-purple pulse-dot text-neon-purple"></div>ACTIVE
+            </div>
+            <div class="flex items-center gap-2 text-[10px] font-mono font-bold text-white/70">
+              <div class="w-2 h-2 rounded-full bg-neon-amber pulse-dot text-neon-amber"></div>GATE
+            </div>
+            <div class="flex items-center gap-2 text-[10px] font-mono font-bold text-white/70">
+              <div class="w-2 h-2 rounded-full bg-neon-pink"></div>AI NODE
+            </div>
+            <div class="flex items-center gap-2 text-[10px] font-mono font-bold text-white/70">
+              <div class="w-2 h-2 rounded-full bg-white/30"></div>PENDING
+            </div>
+          </div>
+
+          <!-- ZOOM CONTROLS -->
+          <div class="absolute bottom-6 right-6 glass-strong rounded-xl p-1 flex flex-col gap-1 z-10">
+            <button onclick="zoomIn()" class="w-8 h-8 rounded-lg hover:bg-white/[0.06] text-white/70 hover:text-white flex items-center justify-center text-[16px] font-bold transition-colors">+</button>
+            <button onclick="zoomOut()" class="w-8 h-8 rounded-lg hover:bg-white/[0.06] text-white/70 hover:text-white flex items-center justify-center text-[16px] font-bold transition-colors">−</button>
+            <div class="h-px bg-white/10 mx-1"></div>
+            <button onclick="zoomFit()" class="w-8 h-8 rounded-lg hover:bg-white/[0.06] text-white/70 hover:text-white flex items-center justify-center transition-colors" title="Fit">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            </button>
+            <div class="text-center text-[9px] font-mono text-white/40 py-1" id="zoom-val">100%</div>
+          </div>
+
+          <!-- MINIMAP -->
+          <div class="absolute top-6 right-6 glass-strong rounded-xl p-2 z-10 w-44 h-24 overflow-hidden">
+            <div class="text-[8px] font-mono font-bold text-white/40 mb-1.5 px-1">MINIMAP</div>
+            <div class="relative h-16 bg-white/[0.02] rounded overflow-hidden">
+              <!-- mini representation of nodes -->
+              <div class="absolute bg-neon-green/60 rounded-sm" style="left:5%;top:25%;width:6%;height:14%"></div>
+              <div class="absolute bg-neon-green/60 rounded-sm" style="left:14%;top:25%;width:6%;height:14%"></div>
+              <div class="absolute bg-neon-green/60 rounded-sm" style="left:14%;top:50%;width:6%;height:14%"></div>
+              <div class="absolute bg-neon-green/60 rounded-sm" style="left:25%;top:25%;width:6%;height:14%"></div>
+              <div class="absolute bg-neon-purple rounded-sm glow-purple" style="left:42%;top:35%;width:7%;height:16%"></div>
+              <div class="absolute bg-neon-amber/60 rounded-sm" style="left:54%;top:55%;width:6%;height:14%"></div>
+              <div class="absolute bg-white/30 rounded-sm" style="left:62%;top:55%;width:6%;height:14%"></div>
+              <div class="absolute bg-neon-pink/60 rounded-sm" style="left:73%;top:40%;width:6%;height:14%"></div>
+              <div class="absolute bg-white/30 rounded-sm" style="left:73%;top:78%;width:6%;height:14%"></div>
+              <div class="absolute bg-neon-green/40 rounded-sm" style="left:85%;top:40%;width:6%;height:14%"></div>
+              <div class="absolute bg-neon-green/40 rounded-sm" style="left:85%;top:60%;width:6%;height:14%"></div>
+              <!-- viewport indicator -->
+              <div class="absolute border-2 border-neon-purple rounded-sm" style="left:15%;top:15%;width:35%;height:60%;background:rgba(167,139,250,0.05)"></div>
+            </div>
+          </div>
+
+          <!-- DETAIL PANEL -->
+          <div class="panel-slide absolute right-0 top-0 bottom-0 w-[360px] glass-strong border-l border-white/10 z-30 overflow-y-auto" id="detail-panel">
+            <div class="p-5 border-b border-white/[0.04]">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex-1 min-w-0">
+                  <div class="text-[16px] font-bold tracking-tight" id="dp-title">Node</div>
+                  <div class="text-[10px] font-mono text-white/40 mt-1 font-bold tracking-wide" id="dp-sub"></div>
+                </div>
+                <button onclick="closeDetail()" class="w-7 h-7 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] text-white/60 flex items-center justify-center flex-shrink-0 transition-colors">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+            <div id="dp-content"></div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ COMPONENT STYLES ═══ -->
+<style>
+.sb-item{
+  width:42px;height:42px;border-radius:12px;border:none;background:transparent;
+  color:rgba(255,255,255,0.45);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;position:relative;
+  transition:all 0.15s ease;
+}
+.sb-item:hover{background:rgba(255,255,255,0.04);color:white;box-shadow:0 0 12px rgba(167,139,250,0.2)}
+.sb-item.active{background:rgba(167,139,250,0.12);color:#A78BFA;box-shadow:0 0 16px rgba(167,139,250,0.25)}
+
+/* DASHBOARD: task items */
+.task-item{
+  display:flex;align-items:flex-start;gap:10px;padding:9px 4px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.task-item:last-child{border-bottom:none}
+.task-check{
+  width:18px;height:18px;border-radius:6px;border:1.5px solid rgba(255,255,255,0.15);
+  flex-shrink:0;cursor:pointer;margin-top:1px;
+  display:flex;align-items:center;justify-content:center;transition:all 0.15s;
+}
+.task-check:hover{border-color:#A78BFA;box-shadow:0 0 8px rgba(167,139,250,0.3)}
+.task-check.checked{background:linear-gradient(135deg,#8B5CF6,#A78BFA);border-color:#A78BFA;box-shadow:0 0 12px rgba(167,139,250,0.5)}
+.task-check.checked::after{content:'✓';color:white;font-size:11px;font-weight:800}
+.task-text{font-size:12.5px;color:rgba(244,242,248,0.9);flex:1;line-height:1.45;font-weight:500}
+.task-item.done .task-text{color:rgba(255,255,255,0.3);text-decoration:line-through}
+
+/* DASHBOARD: project rows */
+.project-row{
+  display:grid;
+  grid-template-columns:1fr 90px 1fr 110px auto;
+  gap:18px;align-items:center;
+  padding:12px 16px;border-radius:14px;
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.04);
+  cursor:pointer;transition:all 0.18s ease;
+}
+.project-row:hover{
+  background:rgba(167,139,250,0.04);
+  border-color:rgba(167,139,250,0.2);
+  transform:translateX(2px);
+  box-shadow:0 8px 24px rgba(0,0,0,0.3),0 0 24px rgba(167,139,250,0.05);
+}
+
+/* MODULE SCREENS */
+.module-stat{
+  grid-column:span 3;
+  padding:18px;border-radius:18px;
+  background:linear-gradient(145deg,rgba(29,27,46,0.72),rgba(15,14,26,0.92));
+  border:1px solid rgba(255,255,255,0.06);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),0 8px 28px rgba(0,0,0,0.28);
+}
+.module-stat-label{font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.42);letter-spacing:1.4px}
+.module-stat-value{font-size:30px;font-weight:900;letter-spacing:-1px;line-height:1;margin-top:12px}
+.module-stat-note{font-size:11px;color:rgba(255,255,255,0.46);margin-top:8px}
+.module-row{
+  display:grid;grid-template-columns:1fr 110px 120px 110px;gap:16px;align-items:center;
+  padding:14px 16px;border-radius:14px;background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.05);transition:all 0.18s ease;
+}
+.module-row:hover{background:rgba(167,139,250,0.045);border-color:rgba(167,139,250,0.18);transform:translateX(2px)}
+.module-pill{
+  width:max-content;padding:5px 9px;border-radius:999px;
+  font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:0.6px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,0.65);
+}
+.module-tab{
+  font-size:11px;font-weight:800;font-family:'JetBrains Mono',monospace;
+  padding:6px 10px;border-radius:7px;color:rgba(255,255,255,0.42);transition:all 0.16s ease;
+}
+.module-tab:hover{color:white;background:rgba(255,255,255,0.04)}
+.module-tab.active{background:rgba(167,139,250,0.18);color:#A78BFA}
+.module-side-item{
+  padding:12px;border-radius:12px;background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.05);
+}
+.module-action{
+  height:38px;border-radius:10px;background:rgba(255,255,255,0.035);
+  border:1px solid rgba(255,255,255,0.06);
+  color:rgba(255,255,255,0.72);font-size:12px;font-weight:700;transition:all 0.16s ease;
+}
+.module-action:hover{background:rgba(167,139,250,0.12);border-color:rgba(167,139,250,0.24);color:white}
+.theme-toggle{
+  width:64px;height:34px;border-radius:999px;padding:4px;
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);
+  display:flex;align-items:center;transition:all 0.2s ease;
+}
+.theme-toggle-knob{width:24px;height:24px;border-radius:50%;background:#A78BFA;box-shadow:0 0 18px rgba(167,139,250,0.45);transition:transform 0.2s ease}
+html.light body{background:#F7F8FB;color:#15131C}
+html.light .bg-cosmos{background:#F7F8FB}
+html.light .grid-overlay{opacity:0.25}
+html.light .glass,html.light .glass-strong,.light-surface{
+  background:linear-gradient(145deg,rgba(255,255,255,0.86),rgba(240,243,248,0.95));
+  border-color:rgba(15,20,30,0.1);color:#15131C;
+}
+html.light .text-white\/40,html.light .text-white\/50{color:rgba(21,19,28,0.52)}
+html.light .text-white\/70,html.light .text-white\/60{color:rgba(21,19,28,0.72)}
+html.light .bg-white\/\[0\.03\],html.light .bg-white\/\[0\.02\]{background:rgba(10,20,30,0.04)}
+html.light .border-white\/\[0\.06\],html.light .border-white\/\[0\.04\]{border-color:rgba(10,20,30,0.1)}
+html.light .theme-toggle{background:rgba(10,20,30,0.08);border-color:rgba(10,20,30,0.14)}
+html.light .theme-toggle-knob{transform:translateX(30px);background:#3B82F6}
+
+@media (max-width: 900px){
+  html,body{overflow:auto}
+  .relative.flex.h-screen{min-height:100vh;height:auto;padding-bottom:72px}
+  aside.w-\[68px\]{position:fixed;left:0;right:0;bottom:0;width:100%;height:64px;z-index:60;flex-direction:row;padding:8px 12px;justify-content:center;border-right:0;border-top:1px solid rgba(255,255,255,0.08)}
+  aside .mb-6,aside .flex-1{display:none}
+  header.h-16{height:auto;min-height:64px;flex-wrap:wrap;padding:12px;gap:10px}
+  header .max-w-md{max-width:none;min-width:220px}
+  #view-dash>div,#view-module>div{padding:18px 14px}
+  .grid.grid-cols-12{grid-template-columns:1fr}
+  .col-span-4,.col-span-7,.col-span-8,.col-span-5,.module-stat{grid-column:1/-1}
+  .project-row,.module-row{grid-template-columns:1fr;gap:8px}
+  #view-canvas .h-14{height:auto;min-height:56px;flex-wrap:wrap;padding:10px}
+  #detail-panel{width:min(100vw,360px)}
+}
+
+/* OFFICE list cards */
+.office-card{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:10px;
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.04);
+  cursor:pointer;transition:all 0.15s;
+}
+.office-card:hover{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);transform:translateY(-1px)}
+
+/* ACTIVITY items */
+.activity-feed-item{display:flex;gap:10px;padding:6px 0}
+
+/* CALENDAR */
+.cal-day-label{
+  font-size:9px;font-weight:700;color:rgba(255,255,255,0.3);
+  text-align:center;text-transform:uppercase;letter-spacing:1px;
+  padding:6px 0 4px;font-family:'JetBrains Mono',monospace;
+}
+.cal-day{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);
+  border-radius:50%;cursor:pointer;position:relative;transition:all 0.15s;
+}
+.cal-day:hover{background:rgba(255,255,255,0.05);color:white}
+.cal-day.muted{color:rgba(255,255,255,0.15);opacity:0.5}
+.cal-day.ev-purple{background:linear-gradient(135deg,#8B5CF6,#A78BFA);color:white;font-weight:800;box-shadow:0 0 12px rgba(167,139,250,0.4)}
+.cal-day.ev-green{background:linear-gradient(135deg,#10B981,#34D399);color:white;font-weight:800;box-shadow:0 0 12px rgba(16,185,129,0.4)}
+.cal-day.ev-blue{background:linear-gradient(135deg,#3B82F6,#60A5FA);color:white;font-weight:800;box-shadow:0 0 12px rgba(59,130,246,0.4)}
+.cal-day.ev-pink{background:linear-gradient(135deg,#EC4899,#F472B6);color:white;font-weight:800;box-shadow:0 0 12px rgba(236,72,153,0.4)}
+.cal-day.today{outline:1.5px solid #A78BFA;outline-offset:2px}
+
+/* NODES */
+.fn-node{
+  position:absolute;border-radius:18px;
+  background:linear-gradient(145deg,rgba(29,27,46,0.85) 0%,rgba(15,14,26,0.95) 100%);
+  backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.08);
+  cursor:pointer;transition:transform 0.18s ease,border-color 0.18s ease,box-shadow 0.18s ease;
+  user-select:none;
+  box-shadow:0 8px 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.fn-node:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.16);box-shadow:0 16px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06)}
+
+.fn-node-head{padding:12px 14px 10px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.fn-type{font-size:9px;font-weight:700;letter-spacing:1px;font-family:'JetBrains Mono',monospace}
+.fn-dot{width:8px;height:8px;border-radius:50%}
+.fn-title{font-size:13px;font-weight:700;letter-spacing:-0.3px;line-height:1.25}
+
+.fn-node-body{padding:11px 14px}
+.fn-av{
+  width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;
+  border:1.5px solid #161425;
+  font-family:'JetBrains Mono',monospace;
+}
+.fn-desc{font-size:11px;color:rgba(255,255,255,0.55);line-height:1.4;font-weight:500;margin-top:3px}
+.fn-prog-row{display:flex;align-items:center;gap:7px;margin-top:8px}
+.fn-prog-trk{flex:1;height:3px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden}
+.fn-prog-fl{height:100%;border-radius:2px}
+.fn-tag{
+  font-size:9px;font-weight:600;font-family:'JetBrains Mono',monospace;
+  padding:2px 7px;border-radius:5px;
+  background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);
+  border:1px solid rgba(255,255,255,0.05);
+}
+
+.fn-node-foot{
+  padding:8px 14px 10px;border-top:1px solid rgba(255,255,255,0.05);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.fn-badge-ok{font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:2px 8px;border-radius:4px;background:rgba(16,185,129,0.15);color:#34D399;letter-spacing:0.5px}
+.fn-badge-pending{font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:2px 8px;border-radius:4px;background:rgba(245,158,11,0.15);color:#F59E0B;letter-spacing:0.5px}
+.fn-badge-wait{font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);letter-spacing:0.5px}
+
+.fn-brief{border-color:rgba(167,139,250,0.3);background:linear-gradient(145deg,rgba(167,139,250,0.06) 0%,rgba(15,14,26,0.95) 60%)}
+.fn-gate{border-color:rgba(245,158,11,0.3);background:linear-gradient(145deg,rgba(245,158,11,0.06) 0%,rgba(15,14,26,0.95) 60%)}
+.fn-milestone{border-color:rgba(16,185,129,0.3);background:linear-gradient(145deg,rgba(16,185,129,0.06) 0%,rgba(15,14,26,0.95) 60%)}
+.fn-asset{background:linear-gradient(145deg,rgba(29,27,46,0.9) 0%,rgba(15,14,26,0.95) 100%);overflow:hidden}
+.fn-ai{border-color:rgba(236,72,153,0.3);background:linear-gradient(145deg,rgba(236,72,153,0.06) 0%,rgba(15,14,26,0.95) 60%)}
+</style>
+
+<script>
+// ═══ RADIAL GAUGE ═══
+(function(){
+  const total = 26, completed = 21;
+  const cx = 130, cy = 142, rOut = 116, rIn = 70;
+  const g = document.getElementById('dash-radial');
+  if(!g) return;
+  for(let i = 0; i < total; i++){
+    const aStart = 180 + (i * 180 / total);
+    const aEnd = 180 + ((i + 0.7) * 180 / total);
+    const a1 = aStart * Math.PI / 180, a2 = aEnd * Math.PI / 180;
+    const x1 = cx + rOut * Math.cos(a1), y1 = cy + rOut * Math.sin(a1);
+    const x2 = cx + rOut * Math.cos(a2), y2 = cy + rOut * Math.sin(a2);
+    const x3 = cx + rIn * Math.cos(a2), y3 = cy + rIn * Math.sin(a2);
+    const x4 = cx + rIn * Math.cos(a1), y4 = cy + rIn * Math.sin(a1);
+    const path = `M ${x1} ${y1} A ${rOut} ${rOut} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${rIn} ${rIn} 0 0 0 ${x4} ${y4} Z`;
+    const seg = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    seg.setAttribute('d', path);
+    if(i < completed){
+      const t = i / total;
+      const r = Math.round(59 + (16 - 59) * t);
+      const gr = Math.round(130 + (185 - 130) * t);
+      const b = Math.round(246 + (129 - 246) * t);
+      seg.setAttribute('fill', `rgb(${r},${gr},${b})`);
+      seg.setAttribute('style', `filter:drop-shadow(0 0 4px rgba(167,139,250,0.4));opacity:0;animation:fade-up 0.5s ease-out forwards;animation-delay:${i*30}ms`);
+    } else {
+      seg.setAttribute('fill', 'rgba(255,255,255,0.04)');
+    }
+    g.appendChild(seg);
+  }
+})();
+
+// ═══ CALENDAR BUILD ═══
+(function(){
+  const grid = document.getElementById('cal-grid');
+  if(!grid) return;
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(l => {
+    const d = document.createElement('div');
+    d.className = 'cal-day-label';
+    d.textContent = l;
+    grid.appendChild(d);
+  });
+  // May 2026: May 1 is Friday → offset 5
+  const offset = 5;
+  for(let i = 0; i < offset; i++){
+    const d = document.createElement('div');
+    d.className = 'cal-day muted';
+    d.textContent = 26 + i;
+    grid.appendChild(d);
+  }
+  const events = {
+    2:'purple', 8:'green', 12:'green', 15:'green',
+    17:'today', 18:'today-active', 20:'purple',
+    24:'blue', 27:'pink', 30:'green'
+  };
+  for(let i = 1; i <= 31; i++){
+    const d = document.createElement('div');
+    d.className = 'cal-day';
+    d.textContent = i;
+    const ev = events[i];
+    if(ev === 'purple') d.classList.add('ev-purple');
+    if(ev === 'green') d.classList.add('ev-green');
+    if(ev === 'blue') d.classList.add('ev-blue');
+    if(ev === 'pink') d.classList.add('ev-pink');
+    if(ev === 'today') d.classList.add('today');
+    if(ev === 'today-active'){ d.classList.add('today','ev-purple'); }
+    grid.appendChild(d);
+  }
+  const trail = 7 - (grid.children.length % 7);
+  if(trail < 7) for(let i = 1; i <= trail; i++){
+    const d = document.createElement('div');
+    d.className = 'cal-day muted';
+    d.textContent = i;
+    grid.appendChild(d);
+  }
+})();
+
+// ═══ US MAP DOTS (decorative) ═══
+(function(){
+  const g = document.getElementById('us-dots');
+  if(!g) return;
+  // Approximate US-shaped dot grid
+  const shape = [
+    {x:[80,420],y:90},{x:[60,430],y:100},{x:[50,440],y:110},{x:[45,445],y:120},
+    {x:[45,440],y:130},{x:[50,430],y:140},{x:[55,420],y:150},{x:[60,410],y:160},
+    {x:[65,400],y:170},{x:[80,380],y:180},{x:[100,360],y:190},{x:[130,340],y:200},
+    {x:[160,320],y:210},{x:[200,310],y:220}
+  ];
+  shape.forEach(row => {
+    for(let x = row.x[0]; x <= row.x[1]; x += 8){
+      // Skip some for shape variation
+      if(Math.random() > 0.3){
+        const d = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        d.setAttribute('cx', x);
+        d.setAttribute('cy', row.y);
+        d.setAttribute('r', 1.2);
+        d.setAttribute('fill', 'rgba(255,255,255,0.08)');
+        g.appendChild(d);
+      }
+    }
+  });
+  // Florida tail
+  for(let y = 200; y < 250; y += 8){
+    for(let x = 320; x < 350; x += 8){
+      const d = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      d.setAttribute('cx', x);
+      d.setAttribute('cy', y);
+      d.setAttribute('r', 1.2);
+      d.setAttribute('fill', 'rgba(255,255,255,0.08)');
+      g.appendChild(d);
+    }
+  }
+})();
+
+// ═══ CAPACITY MATRIX DOTS ═══
+(function(){
+  const cfg = [
+    {id:'matrix-delivered', total:48, filled:22, color:'#10B981', dim:'rgba(16,185,129,0.25)'},
+    {id:'matrix-active',    total:48, filled:42, color:'#A78BFA', dim:'rgba(167,139,250,0.25)', glow:true},
+    {id:'matrix-pending',   total:48, filled:14, color:'#F59E0B', dim:'rgba(245,158,11,0.2)'}
+  ];
+  cfg.forEach(c => {
+    const el = document.getElementById(c.id);
+    if(!el) return;
+    for(let i = 0; i < c.total; i++){
+      const dot = document.createElement('div');
+      dot.style.width = '6px';
+      dot.style.height = '6px';
+      dot.style.borderRadius = '50%';
+      if(i < c.filled){
+        dot.style.background = c.color;
+        if(c.glow) dot.style.boxShadow = `0 0 4px ${c.color}`;
+      } else {
+        dot.style.background = c.dim;
+      }
+      dot.style.opacity = '0';
+      dot.style.animation = `fade-up 0.4s ease-out forwards`;
+      dot.style.animationDelay = (i * 8) + 'ms';
+      el.appendChild(dot);
+    }
+  });
+})();
+
+// ═══ NODE DATA ═══
+const NODES = {
+  brief: {
+    title:'Client Brief',
+    sub:'INPUT · BRIEF · COMPLETED MAY 2',
+    members:[{av:'JR',n:'Jordan Reyes',r:'Account Lead',c:'purple'}],
+    deps:[],
+    activity:[
+      {t:'Jordan approved the client brief',m:'May 2 · 2:14 pm'},
+      {t:'Meridian uploaded revised PDF',m:'May 1 · 11:30 am'},
+      {t:'Brief received from client',m:'Apr 30 · 9:00 am'}
+    ],
+    approval:{n:'Jordan Reyes',done:true,ts:'May 2 · 2:14 pm'},
+    attach:'Brand_Guidelines.pdf · 34 pages'
+  },
+  strategy:{title:'Brand Strategy',sub:'STRATEGY · COMPLETED MAY 8',
+    members:[{av:'SK',n:'Sara Kim',r:'Strategist',c:'blue'},{av:'JR',n:'Jordan Reyes',r:'Account Lead',c:'purple'}],
+    deps:['Client Brief'],
+    activity:[{t:'Jordan approved strategy deck',m:'May 8 · 4:00 pm'},{t:'Sara submitted final strategy',m:'May 8 · 1:20 pm'},{t:'Internal review session',m:'May 7 · 3:00 pm'}],
+    approval:{n:'Jordan Reyes',done:true,ts:'May 8 · 4:00 pm'}},
+  audience:{title:'Audience Research',sub:'RESEARCH · COMPLETED MAY 9',
+    members:[{av:'ML',n:'Marco Liu',r:'Creative Director',c:'green'}],deps:['Client Brief'],
+    activity:[{t:'Research deck uploaded',m:'May 9 · 12:30 pm'},{t:'Competitor audit completed',m:'May 8 · 5:00 pm'}],
+    approval:{n:'Jordan Reyes',done:true,ts:'May 9 · 2:00 pm'}},
+  'creative-brief':{title:'Creative Brief',sub:'DOCUMENT · COMPLETED MAY 12',
+    members:[{av:'SK',n:'Sara Kim',r:'Strategist',c:'blue'},{av:'ML',n:'Marco Liu',r:'Creative Director',c:'green'}],
+    deps:['Brand Strategy','Audience Research'],
+    activity:[{t:'Brief approved by Jordan',m:'May 12 · 3:45 pm'},{t:'Marco finalized visual direction',m:'May 12 · 11:00 am'},{t:'Copy pillars drafted',m:'May 11 · 4:00 pm'}],
+    approval:{n:'Jordan Reyes',done:true,ts:'May 12 · 3:45 pm'}},
+  concepts:{title:'Concept Development',sub:'IN PROGRESS · DUE MAY 20',
+    members:[{av:'ML',n:'Marco Liu',r:'Creative Director',c:'green'},{av:'SK',n:'Sara Kim',r:'Strategist',c:'blue'},{av:'DW',n:'Daniel Wells',r:'Designer',c:'pink'}],
+    deps:['Creative Brief'],
+    activity:[{t:'Marco uploaded Concept C final mockups',m:'Today · 10:30 am'},{t:'Sara left feedback on Concept A',m:'Yesterday · 5:15 pm'},{t:'Daniel started variant explorations',m:'May 15 · 2:00 pm'},{t:'Concept work began',m:'May 14 · 9:00 am'}],
+    approval:{n:'Jordan Reyes',done:false}},
+  approval1:{title:'Concept Sign-off',sub:'APPROVAL GATE · PENDING 2 DAYS',
+    members:[{av:'JR',n:'Jordan Reyes',r:'Approver',c:'purple'}],deps:['Concept Development'],
+    activity:[{t:'Gate triggered — awaiting concept delivery',m:'May 16 · 4:00 pm'}],
+    approval:{n:'Jordan Reyes',done:false}},
+  production:{title:'Final Production',sub:'PRODUCTION · BLOCKED',
+    members:[{av:'ML',n:'Marco Liu',r:'Creative Director',c:'green'},{av:'SK',n:'Sara Kim',r:'Production',c:'blue'}],
+    deps:['Concept Sign-off'],activity:[],approval:null},
+  'ai-gen':{title:'AI Asset Variants',sub:'AI GENERATION · QUEUED',
+    members:[{av:'AI',n:'FlowNode AI',r:'Automated agent',c:'pink'},{av:'ML',n:'Marco Liu',r:'Reviewer',c:'green'}],
+    deps:['Final Production'],
+    activity:[{t:'Variant generation queue set up',m:'May 14 · 11:00 am'}],
+    approval:null,attach:'Will produce 24 variants across 6 social formats'},
+  asset1:{title:'Logo variants.fig',sub:'ASSET · FIGMA · V4 · MAY 16',
+    members:[{av:'ML',n:'Marco Liu',r:'Created by',c:'green'}],deps:[],
+    activity:[{t:'v4 uploaded — dark variants added',m:'May 16 · 2:00 pm'},{t:'v3 uploaded after feedback',m:'May 15 · 11:00 am'},{t:'v2 reviewed by Jordan',m:'May 14 · 4:30 pm'}],
+    approval:null},
+  asset2:{title:'Copy_deck_v3.docx',sub:'ASSET · WORD · 12 PAGES · MAY 17',
+    members:[{av:'SK',n:'Sara Kim',r:'Created by',c:'blue'}],deps:[],
+    activity:[{t:'Sara updated copy deck to v3',m:'May 17 · 9:45 am'},{t:'v2 reviewed and approved',m:'May 16 · 3:00 pm'}],
+    approval:null},
+  asset3:{title:'Brand_Guidelines.pdf',sub:'ASSET · PDF · 34 PAGES · CLIENT',
+    members:[{av:'JR',n:'Jordan Reyes',r:'Uploaded by',c:'purple'}],deps:[],
+    activity:[{t:'Source doc received from Meridian Health',m:'Apr 30 · 9:00 am'}],
+    approval:null},
+  approval2:{title:'Final Delivery Approval',sub:'APPROVAL GATE · NOT STARTED',
+    members:[{av:'JR',n:'Jordan Reyes',r:'Approver',c:'purple'}],deps:['Final Production'],
+    activity:[],approval:{n:'Jordan Reyes',done:false}},
+  delivery:{title:'Final Deliverables',sub:'MILESTONE · MAY 30, 2026',
+    members:[{av:'JR',n:'Jordan Reyes',r:'Account Lead',c:'purple'},{av:'ML',n:'Marco Liu',r:'Creative Director',c:'green'}],
+    deps:['Final Delivery Approval'],activity:[],approval:null},
+  presentation:{title:'Client Presentation',sub:'PRESENTATION · MAY 30, 2026',
+    members:[{av:'JR',n:'Jordan Reyes',r:'Account Lead',c:'purple'},{av:'SK',n:'Sara Kim',r:'Strategist',c:'blue'}],
+    deps:['Final Delivery Approval'],activity:[],approval:null}
+};
+
+const PROJECTS = {
+  'brand-refresh':{name:'Brand Refresh Campaign',meta:'MERIDIAN HEALTH · NYC · 9/13 STEPS · 68% COMPLETE',status:'LIVE',statusClass:'bg-neon-green/10 border-neon-green/20 text-neon-mint',dotClass:'bg-neon-green pulse-dot text-neon-green'},
+  'product-launch':{name:'Product Launch — v3.0',meta:'CASCADE SOFTWARE · LA · 11/13 STEPS · 85% COMPLETE',status:'REVIEW',statusClass:'bg-neon-amber/10 border-neon-amber/20 text-neon-amber',dotClass:'bg-neon-amber'},
+  'social-series':{name:'Social Content Series',meta:'NOVA FINTECH · CHI · 4/12 STEPS · 32% COMPLETE',status:'LIVE',statusClass:'bg-neon-green/10 border-neon-green/20 text-neon-mint',dotClass:'bg-neon-green pulse-dot text-neon-green'},
+  'event-kit':{name:'Annual Conference Kit',meta:'TERRAGROUP · ATL · 6/13 STEPS · 45% COMPLETE',status:'HOLD',statusClass:'bg-neon-red/10 border-neon-red/20 text-neon-red',dotClass:'bg-neon-red'},
+};
+
+// ═══ NAVIGATION ═══
+const MODULES = {
+  projects:{kicker:'PROJECTS / PORTFOLIO',title:'Projects',subtitle:'12 active initiatives across strategy, production, and launch.',mainTitle:'Portfolio Queue',mainSubtitle:'Click Brand Refresh to open the node canvas.',stats:[['ACTIVE','12','+3 from last week','purple'],['AT RISK','4','Two need approval today','amber'],['AVG VELOCITY','68%','Across live programs','blue'],['DELIVERED','21','This month','green']],rows:[['Brand Refresh Campaign','Meridian Health','68%','LIVE','brand-refresh'],['Product Launch v3.0','Cascade Software','85%','REVIEW','product-launch'],['Social Content Series','Nova Fintech','32%','LIVE','social-series'],['Annual Conference Kit','Terragroup','45%','HOLD','event-kit']],sideTitle:'Priority Signals',side:[['Concept Sign-off','Waiting on Jordan Reyes','amber'],['Cascade release kit','Final deck review today','blue'],['Nova content series','Needs new copy owner','purple']]},
+  tasks:{kicker:'TASKS / TODAY',title:'Tasks',subtitle:'Operator-grade task list for the production team.',mainTitle:'Today Queue',mainSubtitle:'Grouped by due date and dependency impact.',stats:[['DUE TODAY','8','5 assigned to creative','purple'],['BLOCKED','3','All tied to approvals','amber'],['DONE','14','Since yesterday','green'],['SLA','92%','On-time completion','blue']],rows:[['Approve Concept C direction','Jordan Reyes','Today','BLOCKED'],['Export logo lockups','Marco Liu','Today','ACTIVE'],['Update launch copy deck','Sara Kim','Tomorrow','REVIEW'],['QA final social formats','Daniel Wells','May 20','ACTIVE']],sideTitle:'My Checklist',side:[['Review pending gates','2 approvals open','amber'],['Confirm delivery room','Client presentation May 30','green'],['Sync asset naming','24 AI variants queued','pink']]},
+  calendar:{kicker:'CALENDAR / SCHEDULE',title:'Calendar',subtitle:'Milestones, reviews, and production handoffs for May 2026.',mainTitle:'Upcoming Milestones',mainSubtitle:'Schedule risk is highest around approval gates.',stats:[['REVIEWS','6','Next 7 days','purple'],['MILESTONES','4','Two client-facing','green'],['CONFLICTS','2','Resolve before Friday','amber'],['CAPACITY','81%','Across 4 offices','blue']],rows:[['Concept review','Meridian Health','May 20','REVIEW'],['Production handoff','Cascade Software','May 22','ACTIVE'],['Client presentation','Meridian Health','May 30','MILESTONE'],['Social sprint retro','Nova Fintech','May 31','PLANNED']],sideTitle:'This Week',side:[['Mon May 18','Production standup at 10:00','green'],['Wed May 20','Concept review at 14:00','purple'],['Fri May 22','Cascade handoff at 11:30','blue']]},
+  files:{kicker:'FILES / ASSETS',title:'Files',subtitle:'Recent source assets, client docs, and delivery exports.',mainTitle:'Asset Library',mainSubtitle:'Versioned files connected to active workflow nodes.',stats:[['FILES','128','34 uploaded this week','purple'],['UNLINKED','7','Need project mapping','amber'],['APPROVED','84','Ready for delivery','green'],['STORAGE','62%','Studio workspace','blue']],rows:[['Logo_variants.fig','Figma','v4','APPROVED'],['Copy_deck_v3.docx','Word','v3','REVIEW'],['Brand_Guidelines.pdf','PDF','source','LOCKED'],['Social_Exports.zip','Archive','draft','ACTIVE']],sideTitle:'Recent Uploads',side:[['Logo variants','Marco Liu uploaded today','purple'],['Copy deck','Sara Kim updated yesterday','blue'],['Guidelines PDF','Client source document','green']]},
+  team:{kicker:'TEAM / CAPACITY',title:'Team',subtitle:'Live staffing, ownership, and office availability.',mainTitle:'People Matrix',mainSubtitle:'Capacity reflects assigned work across active projects.',stats:[['ONLINE','18','4 editing now','green'],['OVERLOAD','3','Needs rebalance','amber'],['OFFICES','4','NYC, LA, CHI, ATL','blue'],['UTILIZATION','76%','Healthy range','purple']],rows:[['Jordan Reyes','Account Lead','86%','ONLINE'],['Sara Kim','Strategist','72%','ONLINE'],['Marco Liu','Creative Director','91%','OVERLOAD'],['Daniel Wells','Designer','68%','ONLINE']],sideTitle:'Staffing Notes',side:[['Marco Liu','Shift two tasks to Daniel','amber'],['Sara Kim','Available for copy review','blue'],['Jordan Reyes','Approval owner for gates','purple']]},
+  reports:{kicker:'REPORTS / INSIGHTS',title:'Reports',subtitle:'Operational analytics for projects, throughput, and approvals.',mainTitle:'Report Library',mainSubtitle:'Board-ready views generated from live workflow data.',stats:[['THROUGHPUT','64%','+12% vs last week','green'],['CYCLE TIME','4.2d','Down 0.8 days','blue'],['REWORK','9%','Within target','purple'],['BOTTLENECKS','3','Approval-heavy','amber']],rows:[['Executive Portfolio Snapshot','All clients','Today','READY'],['Approval Bottleneck Audit','Meridian Health','May 18','READY'],['Capacity Forecast','All offices','May 19','DRAFT'],['Delivery Health Report','Active projects','May 20','SCHEDULED']],sideTitle:'Key Findings',side:[['Approvals','Largest delay source this week','amber'],['Capacity','Creative team near ceiling','purple'],['Delivery','May 30 remains on track','green']]},
+  settings:{themeOnly:true,kicker:'SETTINGS',title:'Settings',subtitle:'Switch the interface appearance.',mainTitle:'Appearance',mainSubtitle:'Choose the app theme.',stats:[],rows:[],sideTitle:'',side:[]}
+};
+
+function setActiveSidebar(id){
+  document.querySelectorAll('.sb-item').forEach(btn => {
+    btn.classList.remove('active');
+    const marker = btn.querySelector('.sb-indicator');
+    if(marker) marker.remove();
+  });
+  const btn = document.getElementById('sb-' + id);
+  if(btn){
+    btn.classList.add('active');
+    if(!btn.querySelector('.sb-indicator')) btn.insertAdjacentHTML('afterbegin','<span class="sb-indicator"></span>');
+  }
+}
+function hideAllViews(){
+  ['view-dash','view-module','view-canvas'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.add('hidden');
+    el.style.display = 'none';
+  });
+}
+function showDash(){
+  setActiveSidebar('dash');
+  hideAllViews();
+  const dash = document.getElementById('view-dash');
+  dash.classList.remove('hidden');
+  dash.style.display = '';
+  closeDetail();
+}
+function showModule(id){
+  const data = MODULES[id];
+  if(!data) return;
+  setActiveSidebar(id);
+  hideAllViews();
+  closeDetail();
+  renderModule(data);
+  const mv = document.getElementById('view-module');
+  mv.classList.remove('hidden');
+  mv.style.display = '';
+  mv.scrollTop = 0;
+}
+function renderModule(data){
+  document.getElementById('module-kicker').textContent = data.kicker;
+  document.getElementById('module-title').textContent = data.title;
+  document.getElementById('module-subtitle').textContent = data.subtitle;
+  document.getElementById('module-main-title').textContent = data.mainTitle;
+  document.getElementById('module-main-subtitle').textContent = data.mainSubtitle;
+  document.getElementById('module-side-title').textContent = data.sideTitle;
+  if(data.themeOnly){
+    document.getElementById('module-stats').innerHTML = '';
+    document.getElementById('module-main-list').innerHTML = `
+      <div class="module-side-item flex items-center justify-between gap-4">
+        <div>
+          <div class="text-[14px] font-bold">Light / Dark Mode</div>
+          <div class="text-[11px] text-white/40 mt-1">Toggle the full app theme.</div>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light or dark mode"><span class="theme-toggle-knob"></span></button>
+      </div>`;
+    document.getElementById('module-side-list').innerHTML = '';
+    return;
+  }
+  document.getElementById('module-stats').innerHTML = data.stats.map(s => `
+    <div class="module-stat">
+      <div class="module-stat-label">${s[0]}</div>
+      <div class="module-stat-value text-neon-${s[3]}">${s[1]}</div>
+      <div class="module-stat-note">${s[2]}</div>
+    </div>`).join('');
+  document.getElementById('module-main-list').innerHTML = data.rows.map(r => {
+    const projectClick = r[4] ? ` onclick="openProject('${r[4]}')"` : '';
+    return `<div class="module-row cursor-pointer"${projectClick}>
+      <div class="min-w-0">
+        <div class="text-[13px] font-bold truncate">${r[0]}</div>
+        <div class="text-[10px] font-mono text-white/40 mt-1 truncate">${r[1]}</div>
+      </div>
+      <div class="text-[11px] font-mono font-bold text-white/60">${r[2]}</div>
+      <div class="module-pill">${r[3]}</div>
+      <button onclick="event.stopPropagation();showToast('Opened ${r[0]}')" class="module-action h-8">Open</button>
+    </div>`;
+  }).join('');
+  document.getElementById('module-side-list').innerHTML = data.side.map(s => `
+    <div class="module-side-item">
+      <div class="flex items-center gap-2 mb-1">
+        <div class="w-2 h-2 rounded-full bg-neon-${s[2]}"></div>
+        <div class="text-[12px] font-bold">${s[0]}</div>
+      </div>
+      <div class="text-[11px] text-white/40 leading-snug">${s[1]}</div>
+    </div>`).join('');
+  document.querySelectorAll('.module-tab').forEach((tab, i) => tab.classList.toggle('active', i === 0));
+}
+function setModuleTab(tab){
+  tab.parentElement.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  showToast(tab.textContent + ' items loaded');
+}
+function toggleTheme(){
+  const html = document.documentElement;
+  html.classList.toggle('light');
+  html.classList.toggle('dark', !html.classList.contains('light'));
+  showToast(html.classList.contains('light') ? 'Light mode enabled' : 'Dark mode enabled');
+}
+function toggleCanvasTheme(){
+  const ws = document.getElementById('canvas-workspace');
+  const btn = document.getElementById('canvas-theme-btn');
+  ws.classList.toggle('canvas-theme-light');
+  ws.classList.toggle('canvas-theme-dark', !ws.classList.contains('canvas-theme-light'));
+  if(btn) btn.textContent = ws.classList.contains('canvas-theme-light') ? 'LIGHT' : 'DARK';
+  showToast(ws.classList.contains('canvas-theme-light') ? 'Canvas light mode' : 'Canvas dark mode');
+}
+function openProject(id){
+  setActiveSidebar('projects');
+  const p = PROJECTS[id] || PROJECTS['brand-refresh'];
+  document.getElementById('canvas-proj-name').textContent = p.name;
+  document.getElementById('canvas-proj-meta').textContent = p.meta;
+  const s = document.getElementById('canvas-proj-status');
+  s.className = 'flex items-center gap-1.5 ml-2 px-3 py-1 rounded-full border ' + p.statusClass;
+  s.innerHTML = `<div class="w-1.5 h-1.5 rounded-full ${p.dotClass}"></div><span class="text-[10px] font-mono font-bold tracking-wider">${p.status}</span>`;
+  hideAllViews();
+  const cv = document.getElementById('view-canvas');
+  cv.classList.remove('hidden');
+  cv.style.display = 'flex';
+  setTimeout(() => {
+    const s = document.getElementById('canvas-scroll');
+    s.scrollLeft = WORLD_ORIGIN.x - 80;
+    s.scrollTop = WORLD_ORIGIN.y - 80;
+  }, 80);
+}
+
+// ═══ DETAIL PANEL ═══
+function openDetail(id){
+  const d = NODES[id];
+  if(!d) return;
+  document.getElementById('dp-title').textContent = d.title;
+  document.getElementById('dp-sub').textContent = d.sub;
+  let h = '';
+  if(d.members.length){
+    h += `<div class="p-5 border-b border-white/[0.04]"><div class="text-[10px] font-mono font-bold text-white/40 tracking-wider mb-3">TEAM</div>`;
+    d.members.forEach(m => {
+      h += `<div class="flex items-center gap-3 mb-3 last:mb-0">
+        <div class="w-9 h-9 rounded-full bg-neon-${m.c}/30 border border-neon-${m.c}/40 flex items-center justify-center text-[11px] font-bold text-neon-${m.c} flex-shrink-0">${m.av}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-bold">${m.n}</div>
+          <div class="text-[10px] font-mono text-white/40 tracking-wide">${m.r}</div>
+        </div>
+      </div>`;
+    });
+    h += `</div>`;
+  }
+  if(d.deps && d.deps.length){
+    h += `<div class="p-5 border-b border-white/[0.04]"><div class="text-[10px] font-mono font-bold text-white/40 tracking-wider mb-3">DEPENDENCIES</div><div class="flex flex-wrap gap-1.5">`;
+    d.deps.forEach(dep => {
+      h += `<div class="text-[10px] font-mono font-bold text-white/70 px-2.5 py-1.5 rounded-md bg-white/[0.03] border border-white/[0.06] flex items-center gap-1.5"><svg class="w-3 h-3 text-neon-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>${dep}</div>`;
+    });
+    h += `</div></div>`;
+  }
+  if(d.attach){
+    h += `<div class="p-5 border-b border-white/[0.04]"><div class="text-[10px] font-mono font-bold text-white/40 tracking-wider mb-3">ATTACHMENT</div>
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-neon-purple/5 border border-neon-purple/20">
+        <div class="w-8 h-8 rounded-lg bg-neon-purple/20 flex items-center justify-center text-neon-purple text-sm">📎</div>
+        <div class="text-[12px] font-mono font-bold text-neon-purple">${d.attach}</div>
+      </div>
+    </div>`;
+  }
+  if(d.approval){
+    h += `<div class="p-5 border-b border-white/[0.04]"><div class="text-[10px] font-mono font-bold text-white/40 tracking-wider mb-3">APPROVAL</div>`;
+    if(d.approval.done){
+      h += `<div class="flex items-center justify-between p-3 rounded-xl bg-neon-green/5 border border-neon-green/20">
+        <div><div class="text-[12px] font-bold">${d.approval.n}</div><div class="text-[10px] font-mono text-white/40">${d.approval.ts}</div></div>
+        <div class="flex items-center gap-1.5 text-neon-green text-[11px] font-mono font-bold"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>APPROVED</div>
+      </div>`;
+    } else {
+      h += `<div class="flex items-center justify-between mb-3 p-3 rounded-xl bg-neon-amber/5 border border-neon-amber/20">
+        <div><div class="text-[12px] font-bold">${d.approval.n}</div><div class="text-[10px] font-mono text-neon-amber">AWAITING APPROVAL</div></div>
+      </div>
+      <button onclick="event.stopPropagation();approveAction(this)" class="w-full py-3 rounded-xl bg-gradient-to-br from-neon-green to-neon-mint text-ink-900 text-[12px] font-bold tracking-wide flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-transform glow-green">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        APPROVE THIS NODE
+      </button>`;
+    }
+    h += `</div>`;
+  }
+  if(d.activity && d.activity.length){
+    h += `<div class="p-5"><div class="text-[10px] font-mono font-bold text-white/40 tracking-wider mb-3">ACTIVITY LOG</div>`;
+    d.activity.forEach(a => {
+      h += `<div class="flex gap-3 mb-3 last:mb-0">
+        <div class="w-1.5 h-1.5 rounded-full bg-neon-purple mt-2 flex-shrink-0 glow-purple"></div>
+        <div class="flex-1 min-w-0"><div class="text-[12px] leading-snug">${a.t}</div><div class="text-[10px] font-mono text-white/40 mt-1 tracking-wide">${a.m.toUpperCase()}</div></div>
+      </div>`;
+    });
+    h += `</div>`;
+  }
+  document.getElementById('dp-content').innerHTML = h;
+  document.getElementById('detail-panel').classList.add('open');
+  document.querySelectorAll('.fn-node').forEach(n => n.classList.remove('node-active'));
+  const el = document.getElementById('node-' + id);
+  if(el) el.classList.add('node-active');
+  else { const c = document.getElementById('node-concepts'); if(c) c.classList.add('node-active'); }
+}
+
+function closeDetail(){
+  document.getElementById('detail-panel').classList.remove('open');
+  document.querySelectorAll('.fn-node').forEach(n => n.classList.remove('node-active'));
+  const c = document.getElementById('node-concepts');
+  if(c) c.classList.add('node-active');
+}
+
+function approveAction(btn){
+  btn.outerHTML = `<div class="w-full py-3 rounded-xl bg-neon-green/10 border border-neon-green/30 text-neon-green text-[12px] font-bold flex items-center justify-center gap-2">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+    APPROVED JUST NOW
+  </div>`;
+  showToast('✓ Node approved · Production unblocked');
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast glass-strong text-white border border-neon-green/30 glow-green';
+  t.innerHTML = `<span class="text-neon-green">${msg}</span>`;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// ═══ TASK TOGGLE ═══
+function toggleTask(el){
+  el.classList.toggle('checked');
+  el.parentElement.classList.toggle('done');
+}
+
+// ═══ ZOOM ═══
+let zoom = 1;
+function zoomIn(){ zoom = Math.min(zoom + 0.15, 1.8); applyZoom(); }
+function zoomOut(){ zoom = Math.max(zoom - 0.15, 0.4); applyZoom(); }
+function zoomFit(){ zoom = 0.65; applyZoom(); }
+function applyZoom(){
+  const p = document.getElementById('canvas-pan');
+  if(p) p.style.transform = `scale(${zoom})`;
+  const v = document.getElementById('zoom-val');
+  if(v) v.textContent = Math.round(zoom * 100) + '%';
+}
+
+// ═══ WORKFLOW SECTION CUSTOMIZATION ═══
+let sectionCounter = 0;
+const WORLD_ORIGIN = {x:2400,y:2200};
+const sectionPresets = [
+  {icon:'🎯', title:'Strategy', sub:'Positioning and planning', color:'#A78BFA'},
+  {icon:'🔎', title:'Research', sub:'Discovery and insight', color:'#3B82F6'},
+  {icon:'🎨', title:'Creative', sub:'Concept and craft', color:'#EC4899'},
+  {icon:'🤖', title:'AI Production', sub:'Generative asset flow', color:'#EC4899'},
+  {icon:'📦', title:'Delivery', sub:'Packaging and handoff', color:'#10B981'}
+];
+function px(n){ return Number(String(n || 0).replace('px','')) || 0; }
+function sectionBounds(section){
+  return {x:px(section.style.left), y:px(section.style.top), w:px(section.style.width), h:px(section.style.height)};
+}
+function nodeBounds(node){
+  return {x:px(node.style.left), y:px(node.style.top), w:node.offsetWidth || px(node.style.width) || 220, h:node.offsetHeight || 150};
+}
+function viewportCanvasPoint(){
+  const s = document.getElementById('canvas-scroll');
+  return s ? {x:(s.scrollLeft + 180) / zoom, y:(s.scrollTop + 120) / zoom} : {x:WORLD_ORIGIN.x,y:WORLD_ORIGIN.y};
+}
+function centerInitialCanvas(){
+  const pan = document.getElementById('canvas-pan');
+  if(!pan || pan.dataset.centered) return;
+  pan.dataset.centered = 'true';
+  pan.querySelectorAll('.workflow-region,.fn-node').forEach(el => {
+    el.style.left = px(el.style.left) + WORLD_ORIGIN.x + 'px';
+    el.style.top = px(el.style.top) + WORLD_ORIGIN.y + 'px';
+  });
+}
+function nodesInSection(section){
+  const s = sectionBounds(section);
+  return [...document.querySelectorAll('#canvas-pan .fn-node')].filter(n => {
+    const b = nodeBounds(n);
+    return b.x + b.w/2 >= s.x && b.x + b.w/2 <= s.x + s.w && b.y + b.h/2 >= s.y && b.y + b.h/2 <= s.y + s.h;
+  });
+}
+function syncSection(section){
+  const nodes = nodesInSection(section);
+  section.dataset.count = nodes.length;
+  const count = section.querySelector('[data-section-count]');
+  if(count) count.textContent = nodes.length + ' nodes';
+  section.style.setProperty('--section-progress', Math.min(100, 22 + nodes.length * 16) + '%');
+  if(nodes.length && !section.classList.contains('collapsed')){
+    const s = sectionBounds(section);
+    const maxX = Math.max(...nodes.map(n => nodeBounds(n).x + nodeBounds(n).w));
+    const maxY = Math.max(...nodes.map(n => nodeBounds(n).y + nodeBounds(n).h));
+    section.style.width = Math.max(s.w, maxX - s.x + 48) + 'px';
+    section.style.height = Math.max(s.h, maxY - s.y + 48) + 'px';
+  }
+}
+function syncSections(){ document.querySelectorAll('.workflow-region').forEach(syncSection); }
+function buildSectionHeader(section, preset){
+  sectionCounter += 1;
+  section.dataset.sectionId = section.dataset.sectionId || 'section-' + sectionCounter;
+  section.style.setProperty('--section-color', preset.color);
+  section.innerHTML = `<div class="workflow-section-header" onmousedown="startSectionDrag(event,this.parentElement)">
+    <div class="workflow-section-icon" contenteditable onmousedown="event.stopPropagation()">${preset.icon}</div>
+    <div class="flex-1 min-w-0">
+      <div class="workflow-section-title" contenteditable onmousedown="event.stopPropagation()">${preset.title}</div>
+      <div class="workflow-section-sub" contenteditable onmousedown="event.stopPropagation()">${preset.sub}</div>
+    </div>
+    <div class="workflow-section-meta" data-section-count>0 nodes</div>
+    <div class="workflow-section-progress"><span></span></div>
+    <button class="workflow-section-btn" onclick="event.stopPropagation();toggleSection(this.closest('.workflow-region'))">⌄</button>
+    <button class="workflow-section-btn" onclick="event.stopPropagation();addNodeToSection(this.closest('.workflow-region'))">+</button>
+    <button class="workflow-section-btn" onclick="event.stopPropagation();duplicateSection(this.closest('.workflow-region'))">⧉</button>
+    <button class="workflow-section-btn" onclick="event.stopPropagation();deleteSection(this.closest('.workflow-region'))">×</button>
+    <input class="workflow-section-color" type="color" value="${preset.color}" oninput="this.closest('.workflow-region').style.setProperty('--section-color',this.value)">
+  </div>`;
+}
+function initWorkflowSections(){
+  centerInitialCanvas();
+  document.querySelectorAll('.workflow-region').forEach((section,i) => {
+    if(section.querySelector('.workflow-section-header')) return;
+    const old = section.querySelector('.workflow-region-label')?.textContent.replace(/[\\/]/g,'').trim().toLowerCase();
+    const preset = sectionPresets[i] || sectionPresets[0];
+    buildSectionHeader(section, {...preset, title: old ? old[0].toUpperCase()+old.slice(1).toLowerCase() : preset.title});
+  });
+  document.querySelectorAll('#canvas-pan .fn-node').forEach(node => {
+    const click = node.getAttribute('onclick') || '';
+    const m = click.match(/openDetail\('([^']+)'\)/);
+    if(m) node.dataset.nodeId = m[1];
+    makeNodeDraggable(node);
+  });
+  if(!edges.length){
+    const defaults = [['brief','strategy'],['brief','audience'],['strategy','creative-brief'],['audience','creative-brief'],['creative-brief','concepts'],['concepts','approval1'],['approval1','production'],['production','ai-gen'],['production','approval2'],['approval2','delivery'],['approval2','presentation']];
+    edges = defaults.filter(([from,to]) => document.querySelector(`[data-node-id="${from}"]`) && document.querySelector(`[data-node-id="${to}"]`)).map(([from,to]) => ({id:'edge-' + (++edgeSeq), from, to, color:'#A78BFA'}));
+  }
+  syncSections();
+}
+function addWorkflowSection(){
+  const pan = document.getElementById('canvas-pan');
+  const preset = sectionPresets[sectionCounter % sectionPresets.length];
+  const p = viewportCanvasPoint();
+  const section = document.createElement('div');
+  section.className = 'workflow-region';
+  section.style.cssText = `left:${p.x}px;top:${p.y}px;width:420px;height:280px`;
+  buildSectionHeader(section, preset);
+  pan.appendChild(section);
+  syncSection(section);
+  showToast('Workflow section added');
+}
+function toggleSection(section){
+  const nodes = nodesInSection(section);
+  section.classList.toggle('collapsed');
+  nodes.forEach(n => n.style.display = section.classList.contains('collapsed') ? 'none' : '');
+  showToast(section.classList.contains('collapsed') ? 'Section collapsed' : 'Section expanded');
+}
+function deleteSection(section){
+  nodesInSection(section).forEach(n => n.style.display = '');
+  section.remove();
+  showToast('Workflow section deleted');
+}
+function duplicateSection(section){
+  const s = sectionBounds(section);
+  const clone = section.cloneNode(true);
+  clone.style.left = s.x + 70 + 'px';
+  clone.style.top = s.y + 70 + 'px';
+  clone.dataset.sectionId = 'section-' + (++sectionCounter);
+  document.getElementById('canvas-pan').appendChild(clone);
+  nodesInSection(section).forEach(n => {
+    const copy = n.cloneNode(true);
+    const b = nodeBounds(n);
+    copy.style.left = b.x + 70 + 'px';
+    copy.style.top = b.y + 70 + 'px';
+    copy.id = '';
+    makeNodeDraggable(copy);
+    document.getElementById('canvas-pan').appendChild(copy);
+  });
+  syncSections();
+  showToast('Section duplicated with nodes');
+}
+function addNodeToSection(section){
+  const s = sectionBounds(section);
+  const title = section.querySelector('.workflow-section-title')?.textContent || 'Workflow';
+  const node = document.createElement('div');
+  node.className = 'fn-node';
+  node.style.cssText = `left:${s.x + 36}px;top:${s.y + 92 + nodesInSection(section).length*34}px;width:220px`;
+  node.innerHTML = `<div class="fn-node-head"><div class="flex items-center justify-between mb-1.5"><div class="fn-type">CUSTOM NODE</div><div class="fn-dot bg-neon-purple"></div></div><div class="fn-title" contenteditable>${title} Step</div></div><div class="fn-node-body"><p class="fn-desc">Editable production task</p><div class="flex flex-wrap gap-1 mt-2.5"><span class="fn-tag">custom</span><span class="fn-tag">drag me</span></div></div><div class="fn-node-foot"><span class="text-[9px] font-mono text-white/40">NEW</span><span class="fn-badge-pending">ACTIVE</span></div>`;
+  document.getElementById('canvas-pan').appendChild(node);
+  makeNodeDraggable(node);
+  syncSections();
+  renderEdges();
+}
+function startSectionDrag(e, section){
+  if(e.target.closest('button,input,[contenteditable]')) return;
+  e.preventDefault();
+  const b = sectionBounds(section);
+  const start = {cx:e.clientX,cy:e.clientY,left:b.x,top:b.y};
+  function move(ev){
+    section.style.left = start.left + ((ev.clientX - start.cx) / zoom) + 'px';
+    section.style.top = start.top + ((ev.clientY - start.cy) / zoom) + 'px';
+  }
+  function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); syncSections(); }
+  document.addEventListener('mousemove',move);
+  document.addEventListener('mouseup',up);
+}
+function makeNodeDraggable(node){
+  if(node.dataset.draggable) return;
+  node.dataset.draggable = 'true';
+  getNodeId(node);
+  addNodeTools(node);
+  node.addEventListener('mousedown', e => {
+    if(e.target.closest('button,input,[contenteditable]')) return;
+    e.stopPropagation();
+    const b = nodeBounds(node);
+    const start = {x:e.clientX,y:e.clientY,left:b.x,top:b.y,moved:false};
+    function move(ev){
+      const dx = (ev.clientX - start.x) / zoom, dy = (ev.clientY - start.y) / zoom;
+      if(Math.abs(dx)+Math.abs(dy) > 3) start.moved = true;
+      node.style.left = start.left + dx + 'px';
+      node.style.top = start.top + dy + 'px';
+      syncSections();
+      renderEdges();
+    }
+    function up(){
+      document.removeEventListener('mousemove',move);
+      document.removeEventListener('mouseup',up);
+      if(start.moved) setTimeout(() => node.dataset.skipClick='1',0);
+      syncSections();
+      renderEdges();
+    }
+    document.addEventListener('mousemove',move);
+    document.addEventListener('mouseup',up);
+  });
+  node.addEventListener('click', e => {
+    if(handleNodeConnectClick(node,e)) return;
+    if(node.dataset.skipClick){ delete node.dataset.skipClick; e.stopImmediatePropagation(); }
+  }, true);
+}
+let edgeMode = false, edgeSource = null, edgeStraight = false, edgeSeq = 0, nodeSeq = 0, selectedEdge = null;
+let edges = [];
+function getNodeId(node){
+  if(!node.dataset.nodeId) node.dataset.nodeId = node.id || 'node-' + (++nodeSeq);
+  return node.dataset.nodeId;
+}
+function getEdgeSvg(){
+  const svg = document.querySelector('#canvas-pan > svg');
+  if(!svg) return null;
+  svg.id = 'edge-svg';
+  svg.style.pointerEvents = 'auto';
+  svg.querySelectorAll(':scope > path').forEach(p => p.remove());
+  return svg;
+}
+function nodeCenter(node, side){
+  const b = nodeBounds(node);
+  return {x:b.x + (side === 'right' ? b.w : side === 'left' ? 0 : b.w/2), y:b.y + b.h/2};
+}
+function edgePath(fromNode,toNode){
+  const a = nodeCenter(fromNode,'right'), b = nodeCenter(toNode,'left');
+  if(edgeStraight) return `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+  const dx = Math.max(80, Math.abs(b.x - a.x) * .45);
+  return `M ${a.x} ${a.y} C ${a.x + dx} ${a.y} ${b.x - dx} ${b.y} ${b.x} ${b.y}`;
+}
+function renderEdges(){
+  const svg = getEdgeSvg();
+  if(!svg) return;
+  svg.querySelectorAll('.edge-path').forEach(p => p.remove());
+  edges = edges.filter(e => document.querySelector(`[data-node-id="${e.from}"]`) && document.querySelector(`[data-node-id="${e.to}"]`));
+  edges.forEach(e => {
+    const from = document.querySelector(`[data-node-id="${e.from}"]`);
+    const to = document.querySelector(`[data-node-id="${e.to}"]`);
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', edgePath(from,to));
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke', e.color);
+    path.setAttribute('stroke-width','2.5');
+    path.setAttribute('opacity','.86');
+    path.setAttribute('marker-end','url(#arr-purple)');
+    path.dataset.edgeId = e.id;
+    path.classList.add('edge-path');
+    if(selectedEdge === e.id) path.classList.add('edge-selected');
+    path.addEventListener('click', ev => { ev.stopPropagation(); selectedEdge = e.id; renderEdges(); showToast('Dependency selected'); });
+    svg.appendChild(path);
+  });
+}
+function connectNodes(fromNode,toNode){
+  const from = getNodeId(fromNode), to = getNodeId(toNode);
+  if(from === to) return;
+  edges.push({id:'edge-' + (++edgeSeq), from, to, color:document.getElementById('edge-color')?.value || '#A78BFA'});
+  renderEdges();
+  showToast('Dependency created');
+}
+function toggleEdgeMode(){
+  edgeMode = !edgeMode; edgeSource = null;
+  document.querySelectorAll('.fn-node').forEach(n => n.classList.remove('connect-source'));
+  const btn = document.getElementById('edge-mode-btn');
+  if(btn) btn.textContent = edgeMode ? 'PICK NODE' : 'CONNECT';
+  showToast(edgeMode ? 'Click source node, then target node' : 'Connect mode off');
+}
+function toggleEdgeStyle(){
+  edgeStraight = !edgeStraight;
+  const btn = document.getElementById('edge-style-btn');
+  if(btn) btn.textContent = edgeStraight ? 'STRAIGHT' : 'CURVE';
+  renderEdges();
+}
+function addNodeTools(node){
+  if(node.querySelector('.node-tools')) return;
+  node.insertAdjacentHTML('afterbegin', `<div class="node-tools">
+    <button class="node-tool" title="Connect" onclick="event.stopPropagation();beginNodeConnection(this.closest('.fn-node'))">↗</button>
+    <button class="node-tool" title="Delete" onclick="event.stopPropagation();deleteNode(this.closest('.fn-node'))">×</button>
+  </div>`);
+}
+function beginNodeConnection(node){
+  edgeMode = true;
+  document.getElementById('edge-mode-btn').textContent = 'PICK TARGET';
+  edgeSource = node;
+  document.querySelectorAll('.fn-node').forEach(n => n.classList.remove('connect-source'));
+  node.classList.add('connect-source');
+}
+function handleNodeConnectClick(node,e){
+  if(!edgeMode) return false;
+  e.stopImmediatePropagation();
+  if(!edgeSource){ beginNodeConnection(node); return true; }
+  connectNodes(edgeSource,node);
+  edgeSource.classList.remove('connect-source');
+  edgeSource = null;
+  document.getElementById('edge-mode-btn').textContent = 'PICK NODE';
+  return true;
+}
+function deleteNode(node){
+  const id = getNodeId(node);
+  edges = edges.filter(e => e.from !== id && e.to !== id);
+  node.remove();
+  syncSections(); renderEdges();
+  showToast('Node deleted');
+}
+function addCanvasNode(){
+  const pan = document.getElementById('canvas-pan');
+  const p = viewportCanvasPoint();
+  const node = document.createElement('div');
+  node.className = 'fn-node';
+  node.style.cssText = `left:${p.x}px;top:${p.y}px;width:220px`;
+  node.innerHTML = `<div class="fn-node-head"><div class="flex items-center justify-between mb-1.5"><div class="fn-type">NEW NODE</div><div class="fn-dot bg-neon-purple"></div></div><div class="fn-title" contenteditable>Untitled Node</div></div><div class="fn-node-body"><p class="fn-desc" contenteditable>Describe this step</p><div class="flex flex-wrap gap-1 mt-2.5"><span class="fn-tag">new</span></div></div><div class="fn-node-foot"><span class="text-[9px] font-mono text-white/40">DRAFT</span><span class="fn-badge-pending">ACTIVE</span></div>`;
+  pan.appendChild(node); makeNodeDraggable(node); syncSections(); renderEdges();
+}
+function cleanupCanvas(){
+  const sections = [...document.querySelectorAll('.workflow-region')];
+  sections.forEach((s,i) => { s.style.left = 40 + i*460 + 'px'; s.style.top = i%2 ? '360px' : '70px'; s.style.width = '400px'; s.style.height = '280px'; });
+  sections.forEach(s => nodesInSection(s).forEach((n,i) => { const b = sectionBounds(s); n.style.left = b.x + 34 + (i%2)*190 + 'px'; n.style.top = b.y + 86 + Math.floor(i/2)*150 + 'px'; }));
+  syncSections(); renderEdges(); showToast('Canvas cleaned up');
+}
+function startFromScratch(){
+  document.querySelectorAll('#canvas-pan .fn-node,#canvas-pan .workflow-region').forEach(el => el.remove());
+  edges = []; selectedEdge = null; sectionCounter = 0;
+  addWorkflowSection();
+  renderEdges();
+  showToast('Blank workflow ready');
+}
+document.addEventListener('keydown', e => {
+  if((e.key === 'Backspace' || e.key === 'Delete') && selectedEdge){
+    edges = edges.filter(edge => edge.id !== selectedEdge);
+    selectedEdge = null; renderEdges(); showToast('Dependency deleted');
+  }
+});
+document.addEventListener('DOMContentLoaded', () => {
+  initWorkflowSections();
+  renderEdges();
+  document.getElementById('edge-color')?.addEventListener('input', e => {
+    if(!selectedEdge) return;
+    const edge = edges.find(item => item.id === selectedEdge);
+    if(edge){ edge.color = e.target.value; renderEdges(); }
+  });
+});
+
+// ═══ PAN ═══
+(function(){
+  const ws = document.getElementById('canvas-scroll');
+  if(!ws) return;
+  let drag = false, lx = 0, ly = 0;
+  document.getElementById('canvas-workspace').addEventListener('mousedown', e => {
+    if(e.target.closest('.fn-node, .panel-slide, .glass-strong')) return;
+    drag = true; lx = e.clientX; ly = e.clientY;
+  });
+  document.addEventListener('mousemove', e => {
+    if(!drag) return;
+    ws.scrollLeft -= e.clientX - lx;
+    ws.scrollTop -= e.clientY - ly;
+    lx = e.clientX; ly = e.clientY;
+  });
+  document.addEventListener('mouseup', () => drag = false);
+})();
+
+function addNewMenu(){ showToast('Create menu opened: Project, Task, Asset, Approval Gate'); }
+</script>
+
+</body>
+</html>
