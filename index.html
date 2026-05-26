@@ -77,6 +77,28 @@
     body.tv-mode .node-item{width:128px;min-height:46px;padding:8px}
     body.tv-mode .node-item.project{width:156px}
     body.tv-mode .node-item b{font-size:10px}body.tv-mode .node-item span{font-size:9px}
+    #dashboard .flow-svg{display:none}
+    #dashboard .stage h3{display:flex;justify-content:space-between;align-items:center}
+    #dashboard .stage.drop-target{background:rgba(101,57,244,.07)}
+    #dashboard .stage-body{min-height:calc(100% - 24px);padding-bottom:8px}
+    #dashboard .empty-stage{height:100%;min-height:120px;display:grid;place-items:center;text-align:center;color:var(--muted);font-weight:800;font-size:12px;padding:14px;border:1px dashed var(--line);border-radius:12px}
+    #dashboard .pursuit{display:grid;gap:9px;color:var(--ink);cursor:grab}
+    #dashboard .pursuit:active{cursor:grabbing}
+    #dashboard .pursuit.dragging{opacity:.45;transform:scale(.98)}
+    #dashboard .pursuit .port{display:none}
+    .pursuit-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+    .pursuit-top b{font-size:12px;line-height:1.15}
+    .drag-handle{color:var(--muted);font-weight:950;letter-spacing:-.08em}
+    .pursuit-facts{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+    .deadline-chip{border-radius:999px;padding:5px 8px;background:rgba(245,158,11,.12);color:var(--amber);font-size:10px;font-weight:950;white-space:nowrap}
+    .deadline-chip.overdue{background:rgba(255,61,87,.12);color:var(--red)}
+    .profile-stack{display:flex;align-items:center}
+    .profile-photo{width:24px;height:24px;border-radius:50%;border:2px solid var(--panel2);margin-left:-7px;display:grid;place-items:center;overflow:hidden;background:linear-gradient(135deg,#dbeafe,#bfdbfe);box-shadow:0 5px 14px rgba(31,42,76,.12)}
+    .profile-photo:first-child{margin-left:0}
+    .profile-photo svg{width:100%;height:100%;display:block}
+    .progress-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+    .progress-row .bar{height:6px}
+    .progress-value{font-size:11px;font-weight:950;color:var(--violet)}
   </style>
 </head>
 <body class="tv-mode">
@@ -100,20 +122,8 @@
       </div>
       <div class="pipeline-wrap">
         <section class="pipeline glass card">
-          <div class="flex justify-between items-center mb-4"><h2 class="font-black text-xl">Pursuit Flow Pipeline</h2><span class="mini muted">Dependency flow live</span></div>
-          <svg class="flow-svg" viewBox="0 0 1200 430" preserveAspectRatio="none">
-            <path d="M145 150 C235 150 210 235 310 235" stroke="var(--violet)"/><path d="M310 120 C405 120 390 190 485 190" stroke="var(--blue)"/><path d="M485 190 C585 190 570 245 675 245" stroke="var(--cyan)"/><path d="M675 245 C780 245 765 130 880 130" stroke="var(--amber)"/>
-          </svg>
-          <div class="stages">
-            <div class="stage"><h3>Lead <span class="muted">4</span></h3><div class="pursuit text-[var(--violet)]"><b>City Center Mixed-Use Tower</b><p class="mini muted">Boston, MA</p><span class="port"></span></div><div class="pursuit text-[var(--violet)]"><b>Riverside Library Renovation</b><p class="mini muted">Austin, TX</p><span class="port"></span></div><div class="pursuit text-[var(--violet)]"><b>Westlake Campus Expansion</b><p class="mini muted">Portland, OR</p><span class="port"></span></div></div>
-            <div class="stage"><h3>Go / No-Go <span class="muted">3</span></h3><div class="pursuit text-[var(--blue)]"><b>Harbor Point Waterfront</b><p class="mini muted">San Diego, CA</p><span class="port"></span></div><div class="pursuit text-[var(--blue)]"><b>Museum of Art Addition</b><p class="mini muted">Chicago, IL</p><span class="port"></span></div></div>
-            <div class="stage"><h3>Active Pursuit <span class="muted">5</span></h3><div class="pursuit text-[var(--violet)]"><b>Central Hospital Expansion</b><p class="mini muted">Denver, CO</p><span class="pill">85%</span><span class="port"></span></div><div class="pursuit text-[var(--cyan)]"><b>University Science Building</b><p class="mini muted">Berkeley, CA</p><span class="port"></span></div></div>
-            <div class="stage"><h3>In Production <span class="muted">3</span></h3><div class="pursuit text-[var(--violet)]"><b>City Hall Renovation</b><p class="mini muted">Miami, FL</p><span class="port"></span></div><div class="pursuit text-[var(--amber)]"><b>Justice Center New Build</b><p class="mini muted">Nashville, TN</p><span class="port"></span></div></div>
-            <div class="stage"><h3>Review <span class="muted">2</span></h3><div class="pursuit text-[var(--violet)]"><b>Stadium Redevelopment</b><p class="mini muted">Las Vegas, NV</p><span class="port"></span></div><div class="pursuit text-[var(--red)]"><b>K-12 School Modernization</b><p class="mini muted">Orlando, FL</p><span class="port"></span></div></div>
-            <div class="stage"><h3>Submitted <span class="muted">1</span></h3><div class="pursuit"><b>Federal Courthouse New Build</b><p class="mini muted">Washington, DC</p></div></div>
-            <div class="stage"><h3>Awarded</h3><div class="h-full grid place-items-center text-center muted">Keep up the momentum</div></div>
-            <div class="stage"><h3>Lost</h3><div class="h-full grid place-items-center text-center muted">Keep learning and improving</div></div>
-          </div>
+          <div class="flex justify-between items-center mb-4"><h2 class="font-black text-xl">Pursuit Flow Pipeline</h2><span class="mini muted">Drag pursuits between stages</span></div>
+          <div class="stages" id="pipelineStages"></div>
         </section>
         <section class="node-view glass card">
           <div class="node-head"><div><h2 class="font-black text-xl" id="nodeTitle">Project Node View</h2><p class="mini muted" id="nodeMeta">Assets, people, and dependencies</p></div><span class="pill" id="nodeHealth">Live graph</span></div>
@@ -164,6 +174,26 @@ const risks=[['Partner approval pending','Central Hospital Expansion','Waiting 3
 const deadlines=[['MAY 23','Central Hospital Expansion','4 days'],['MAY 27','Airport Terminal C Upgrade','8 days'],['MAY 30','Federal Courthouse New Build','11 days'],['JUN 05','City Hall Renovation','17 days']];
 const teams=[['Design Team',92],['Content Team',76],['Strategy Team',58],['Production Team',64],['Leadership',40]];
 const ready=[['Central Hospital Expansion',85,'violet'],['University Science Building',72,'blue'],['City Hall Renovation',60,'cyan'],['Stadium Redevelopment',45,'amber'],['Airport Terminal C Upgrade',30,'red']];
+const pipelineStages=[
+  ['lead','Lead'],['go','Go / No-Go'],['active','Active Pursuit'],['production','In Production'],
+  ['review','Review'],['submitted','Submitted'],['awarded','Awarded'],['lost','Lost']
+];
+let draggingTitle='';
+let selectedProject='Central Hospital Expansion';
+const projectCards=[
+  {title:'City Center Mixed-Use Tower',stage:'lead',due:'2026-06-02',progress:32,color:'violet'},
+  {title:'Riverside Library Renovation',stage:'lead',due:'2026-06-07',progress:28,color:'violet'},
+  {title:'Westlake Campus Expansion',stage:'lead',due:'2026-06-12',progress:36,color:'violet'},
+  {title:'Harbor Point Waterfront',stage:'go',due:'2026-05-29',progress:48,color:'blue'},
+  {title:'Museum of Art Addition',stage:'go',due:'2026-06-03',progress:52,color:'blue'},
+  {title:'Central Hospital Expansion',stage:'active',due:'2026-06-05',progress:85,color:'violet'},
+  {title:'University Science Building',stage:'active',due:'2026-06-09',progress:72,color:'cyan'},
+  {title:'City Hall Renovation',stage:'production',due:'2026-06-05',progress:60,color:'violet'},
+  {title:'Justice Center New Build',stage:'production',due:'2026-06-14',progress:52,color:'amber'},
+  {title:'Stadium Redevelopment',stage:'review',due:'2026-05-31',progress:45,color:'violet'},
+  {title:'K-12 School Modernization',stage:'review',due:'2026-05-30',progress:35,color:'red'},
+  {title:'Federal Courthouse New Build',stage:'submitted',due:'2026-05-30',progress:100,color:'blue'}
+];
 const projectNodes={
   'Central Hospital Expansion':{stage:'Active Pursuit',location:'Denver, CO',health:'85% ready',people:['Sarah Johnson / Pursuit Lead','Mike Reynolds / Account Lead','Alex Chen / Design Lead','Legal / Review'],assets:['RFP_Document.pdf','Reference Projects.pptx','Hospital Case Studies','Insurance Certificate'],dependencies:['Principal approval','Legal review','MEP consultant input']},
   'City Center Mixed-Use Tower':{stage:'Lead',location:'Boston, MA',health:'42% qualified',people:['Maya Patel / Capture','Owen Brooks / Principal','Nina Lee / Market Lead'],assets:['Client briefing notes','Urban tower portfolio','Zoning research'],dependencies:['Site visit notes','Partner shortlist','Go / No-Go score']},
@@ -185,6 +215,34 @@ const nodePositions={
 };
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function fallbackProject(title){return{stage:'Pursuit',location:'Pipeline',health:'Needs review',people:['Sarah Johnson / Pursuit Lead','Mike Reynolds / Account Lead','Alex Chen / Design Lead'],assets:['RFP document','Project sheets','Team resumes'],dependencies:['Owner approval','Content package','Final review']}}
+function stageLabel(id){return pipelineStages.find(s=>s[0]==id)?.[1]||'Pursuit'}
+function initials(name){return name.split(' / ')[0].split(' ').map(p=>p[0]).join('').slice(0,2)}
+function daysUntil(dateText){const today=new Date();today.setHours(0,0,0,0);const due=new Date(dateText+'T00:00:00');const days=Math.ceil((due-today)/86400000);return days<0?`${Math.abs(days)}d late`:days==0?'Due today':`${days}d left`}
+function avatarSvg(name,i){const hue=[248,211,188,158,25,332][i%6];return `<span class="profile-photo" title="${esc(name)}"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="g${i}${initials(name)}" x1="0" x2="1" y1="0" y2="1"><stop stop-color="hsl(${hue} 92% 78%)"/><stop offset="1" stop-color="hsl(${(hue+34)%360} 88% 62%)"/></linearGradient></defs><rect width="40" height="40" fill="url(#g${i}${initials(name)})"/><circle cx="20" cy="16" r="7" fill="rgba(255,255,255,.78)"/><path d="M8 37c2-9 8-13 12-13s10 4 12 13" fill="rgba(255,255,255,.82)"/><text x="20" y="35" text-anchor="middle" font-size="8" font-weight="900" fill="rgba(7,11,34,.55)">${esc(initials(name))}</text></svg></span>`}
+function cardHtml(card){
+  const data=projectNodes[card.title]||fallbackProject(card.title);
+  const people=data.people.slice(0,3).map(avatarSvg).join('');
+  const countdown=daysUntil(card.due);
+  return `<div class="pursuit text-[var(--${card.color})]" draggable="true" data-title="${esc(card.title)}" ondragstart="startCardDrag(event,'${esc(card.title)}')" ondragend="endCardDrag(event)" onclick="selectProject('${esc(card.title)}')">
+    <div class="pursuit-top"><div><b>${esc(card.title)}</b><p class="mini muted">${esc(data.location)}</p></div><span class="drag-handle">⋮⋮</span></div>
+    <div class="pursuit-facts"><div class="profile-stack">${people}</div><span class="deadline-chip ${countdown.includes('late')?'overdue':''}">${countdown}</span></div>
+    <div class="progress-row"><div class="bar"><span style="width:${card.progress}%;background:var(--${card.color})"></span></div><span class="progress-value">${card.progress}%</span></div>
+  </div>`;
+}
+function renderPipeline(){
+  $('#pipelineStages').innerHTML=pipelineStages.map(([id,label])=>{
+    const cards=projectCards.filter(c=>c.stage==id);
+    const body=cards.length?cards.map(cardHtml).join(''):`<div class="empty-stage">${id=='awarded'?'Ready for wins':id=='lost'?'Capture lessons':'Drop pursuit here'}</div>`;
+    return `<div class="stage" data-stage="${id}" ondragover="allowStageDrop(event)" ondragleave="clearStageDrop(event)" ondrop="dropCard(event,'${id}')"><h3>${label} <span class="muted">${cards.length}</span></h3><div class="stage-body">${body}</div></div>`;
+  }).join('');
+  renderProjectNodes(selectedProject);
+}
+function selectProject(title){selectedProject=title;renderProjectNodes(title)}
+function startCardDrag(event,title){draggingTitle=title;event.currentTarget.classList.add('dragging');event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',title)}
+function endCardDrag(event){event.currentTarget.classList.remove('dragging');$$('#dashboard .stage').forEach(s=>s.classList.remove('drop-target'))}
+function allowStageDrop(event){event.preventDefault();event.currentTarget.classList.add('drop-target')}
+function clearStageDrop(event){event.currentTarget.classList.remove('drop-target')}
+function dropCard(event,stage){event.preventDefault();event.currentTarget.classList.remove('drop-target');const title=event.dataTransfer.getData('text/plain')||draggingTitle;const card=projectCards.find(c=>c.title==title);if(!card)return;card.stage=stage;if(projectNodes[title]){projectNodes[title].stage=stageLabel(stage)};selectedProject=title;renderPipeline();toast(`${title} moved to ${stageLabel(stage)}`)}
 function renderProjectNodes(title){
   const data=projectNodes[title]||fallbackProject(title);
   $('#nodeTitle').textContent=title;
@@ -199,13 +257,13 @@ function renderProjectNodes(title){
 function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
 function modal(title,body){document.body.insertAdjacentHTML('beforeend',`<div class="modal" onclick="this.remove()"><div class="modal-card" onclick="event.stopPropagation()"><div class="flex justify-between gap-4 mb-4"><h2 class="text-3xl font-black tracking-[-.04em]">${title}</h2><button class="btn" onclick="this.closest('.modal').remove()">Close</button></div>${body}</div></div>`)}
 function renderDash(){ 
+  renderPipeline();
   $('#risks').innerHTML=risks.map((r,i)=>`<div class="risk ${i>2?'tv-extra':''}" onclick="modal('${r[0]}','<p class=muted>${r[1]} is blocked. ${r[2]}. Owner queue and escalation chain shown here.</p><div class=\\'bar mt-4\\'><span style=\\'width:64%;background:var(--${r[3]})\\'></span></div>')"><div class="warn">!</div><div class="min-w-0"><b class="truncate-tv">${r[0]}</b><p class="mini muted truncate-tv">${r[1]} • ${r[2]}</p></div><div><span class="avatar">SJ</span><span class="avatar">MR</span><span class="avatar">+2</span></div></div>`).join('');
   $('#deadlines').innerHTML=deadlines.map((d,i)=>`<div onclick="modal('${d[1]}','<p class=muted>Deadline package, owner, readiness score, and missing assets.</p>')" class="flex justify-between py-3 border-b border-[var(--line)] cursor-pointer ${i>2?'tv-extra':''}"><div class="min-w-0"><span class="pill">${d[0]}</span> <b class="truncate-tv">${d[1]}</b></div><b class="text-orange-500">${d[2]}</b></div>`).join('');
   $('#workload').innerHTML=teams.map((t,i)=>`<div onclick="modal('${t[0]}','<p class=muted>Capacity, assigned pursuits, and overloaded roles.</p>')" class="grid grid-cols-[1fr_2fr_44px] gap-3 items-center py-2 cursor-pointer ${i>3?'tv-extra':''}"><b class="truncate-tv">${t[0]}</b><div class="bar"><span style="width:${t[1]}%"></span></div><b>${t[1]}%</b></div>`).join('');
   $('#readiness').innerHTML=ready.map((r,i)=>`<div onclick="modal('${r[0]}','<p class=muted>Readiness checklist, approvals, files, and blockers.</p>')" class="grid grid-cols-[1fr_2fr_44px] gap-3 items-center py-2 cursor-pointer ${i>3?'tv-extra':''}"><b class="truncate-tv">${r[0]}</b><div class="bar"><span style="width:${r[1]}%;background:var(--${r[2]})"></span></div><b>${r[1]}%</b></div>`).join('');
   $$('.metric').forEach(m=>m.onclick=()=>modal(m.querySelector('.mini').textContent,`<p class="muted">Operational drill-down for ${m.querySelector('.mini').textContent.toLowerCase()} with trend, owner, and pursuit impact.</p>`));
-  $$('#dashboard .pursuit').forEach(p=>p.onclick=()=>renderProjectNodes(p.querySelector('b')?.textContent||'Pursuit'));
-  renderProjectNodes('Central Hospital Expansion');
+  $$('#dashboard .pursuit').forEach(p=>p.onclick=()=>selectProject(p.dataset.title||p.querySelector('b')?.textContent||'Pursuit'));
   animateCounts()
 }
 function animateCounts(){ $$('[data-count]').forEach(el=>{let n=+el.dataset.count,s=el.dataset.suffix||'',i=0,t=setInterval(()=>{i+=Math.ceil(n/24); if(i>=n){i=n;clearInterval(t)} el.textContent=i+s},28)})}
