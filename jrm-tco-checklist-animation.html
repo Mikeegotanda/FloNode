@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JRM | TCO Checklist Process</title>
+  <style>
+    :root{
+      --red:#c8102e;
+      --red-deep:#8f0d20;
+      --red-bright:#ef3340;
+      --green:#14a06f;
+      --amber:#f59e0b;
+      --ink:#101722;
+      --muted:#657083;
+      --line:#dfe4ea;
+      --paper:#f6f7f8;
+      --panel:rgba(255,255,255,.95);
+      --shadow:0 18px 56px rgba(31,42,55,.14);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#e8ebef;color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+    button{font:inherit}
+    .stage{position:relative;width:100vw;height:100vh;overflow:hidden;background:linear-gradient(135deg,#f7f8fa 0%,#eef1f4 56%,#e8ecef 100%)}
+    .blueprint{position:absolute;inset:0;background-image:linear-gradient(rgba(57,72,91,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(57,72,91,.055) 1px,transparent 1px);background-size:56px 56px;mask-image:linear-gradient(90deg,transparent,black 22%,black 78%,transparent)}
+    .ambient{position:absolute;inset:0;background:linear-gradient(115deg,rgba(200,16,46,.06),transparent 24%),linear-gradient(305deg,rgba(14,76,112,.06),transparent 26%);pointer-events:none}
+    .topbar{position:absolute;left:0;right:0;top:0;height:80px;background:rgba(255,255,255,.92);border-bottom:1px solid rgba(16,23,34,.09);display:flex;align-items:center;padding:0 5vw;z-index:10}
+    .logo{position:relative;width:170px;height:80px;margin-left:-5vw;padding-left:5vw;display:flex;align-items:center;background:linear-gradient(135deg,#c8102e,#a60924);color:#fff;font-size:32px;font-weight:900;letter-spacing:.02em}
+    .logo:after{content:"";position:absolute;right:-32px;top:0;width:64px;height:80px;background:#c8102e;transform:skewX(-30deg)}
+    .title{margin-left:74px;font-size:20px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+    .title span{display:block;margin-top:4px;color:var(--muted);font-size:10px;letter-spacing:.16em}
+    .timecode{margin-left:auto;color:var(--muted);font-size:12px;font-weight:800;letter-spacing:.09em}
+    .red-rule{width:48px;height:4px;margin-left:18px;background:var(--red);border-radius:999px}
+    .workspace{position:absolute;left:4vw;right:4vw;top:105px;bottom:74px;display:grid;grid-template-columns:minmax(310px,.92fr) minmax(620px,1.75fr);gap:22px}
+    .panel{position:relative;overflow:hidden;border:1px solid rgba(16,23,34,.09);border-radius:18px;background:var(--panel);box-shadow:var(--shadow)}
+    .visual-panel{background:linear-gradient(145deg,#101d27,#1a2d38 54%,#223a43);color:#fff}
+    .visual-panel:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(3,10,14,.62));pointer-events:none}
+    .city{position:absolute;inset:0;opacity:.9}
+    .tower{position:absolute;bottom:0;width:19%;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.22),rgba(255,255,255,.07));border:1px solid rgba(255,255,255,.15);box-shadow:inset 0 0 28px rgba(0,0,0,.2)}
+    .tower:after{content:"";position:absolute;inset:5px;background:repeating-linear-gradient(180deg,rgba(188,225,226,.22) 0 4px,transparent 4px 18px),repeating-linear-gradient(90deg,rgba(188,225,226,.15) 0 2px,transparent 2px 20px)}
+    .tower.one{left:8%;height:72%}.tower.two{left:31%;height:54%}.tower.three{left:55%;height:84%}.tower.four{left:78%;height:63%}
+    .site-line{position:absolute;left:0;right:0;bottom:24%;height:2px;background:rgba(255,255,255,.18)}
+    .scan{position:absolute;left:0;right:0;top:13%;height:2px;background:linear-gradient(90deg,transparent,rgba(239,51,64,.95),transparent);box-shadow:0 0 24px rgba(239,51,64,.85);animation:scan 4s ease-in-out infinite}
+    @keyframes scan{0%,100%{transform:translateY(0);opacity:.28}50%{transform:translateY(340px);opacity:1}}
+    .scene-copy{position:absolute;left:30px;right:30px;bottom:28px;z-index:2}
+    .eyebrow{display:flex;align-items:center;gap:9px;color:#ffbbc2;font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+    .eyebrow i{width:9px;height:9px;border-radius:50%;background:var(--red-bright);box-shadow:0 0 20px var(--red-bright)}
+    .scene-copy h1{max-width:520px;margin:12px 0 10px;font-size:34px;line-height:1.04;letter-spacing:-.04em}
+    .scene-copy p{max-width:500px;margin:0;color:rgba(255,255,255,.73);font-size:15px;line-height:1.45}
+    .scene-badge{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:8px 11px;border:1px solid rgba(255,255,255,.17);border-radius:999px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.88);font-size:11px;font-weight:900;letter-spacing:.05em}
+    .scene-badge b{width:8px;height:8px;border-radius:50%;background:#30d99a;box-shadow:0 0 14px #30d99a}
+    .check-panel{padding:0}
+    .check-head{height:92px;padding:19px 22px;background:linear-gradient(135deg,#af1028,#d51b36);color:#fff;display:flex;align-items:center;gap:16px}
+    .check-icon{width:54px;height:54px;border-radius:15px;background:rgba(255,255,255,.15);display:grid;place-items:center;font-size:28px;font-weight:900}
+    .check-head h2{margin:0;font-size:22px;letter-spacing:-.03em}.check-head p{margin:5px 0 0;color:rgba(255,255,255,.73);font-size:12px;font-weight:700}
+    .progress-wrap{margin-left:auto;text-align:right}.progress-wrap b{display:block;margin-bottom:7px;font-size:22px}.progress-track{width:174px;height:7px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden}.progress-fill{width:0;height:100%;background:#fff;border-radius:inherit;transition:width .8s ease}
+    .checklist{display:grid;gap:8px;padding:16px 18px 18px}
+    .item{min-height:54px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;transition:.55s ease}
+    .item .mark{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:#edf0f3;color:#9ca6b3;font-size:13px;font-weight:900;transition:.55s ease}
+    .item strong{display:block;font-size:13px}.item small{display:block;margin-top:3px;color:var(--muted);font-size:10px;line-height:1.2}
+    .item .status{min-width:80px;padding:6px 8px;border-radius:999px;background:#f1f3f5;color:#7a8591;text-align:center;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;transition:.55s ease}
+    .item.active{border-color:rgba(200,16,46,.55);background:#fff7f8;box-shadow:0 10px 26px rgba(200,16,46,.14);transform:translateX(-7px)}
+    .item.active .mark{background:var(--red);color:#fff;box-shadow:0 0 0 5px rgba(200,16,46,.1)}.item.active .status{background:#ffe6e9;color:var(--red)}
+    .item.done{border-color:rgba(20,160,111,.25);background:#f5fcf9}.item.done .mark{background:var(--green);color:#fff}.item.done .status{background:#def6ed;color:#0e8159}
+    .event-card{position:absolute;left:22px;right:22px;top:110px;padding:16px;border:1px solid rgba(255,255,255,.15);border-radius:15px;background:rgba(5,16,21,.58);backdrop-filter:blur(12px);z-index:3;opacity:0;transform:translateY(-12px);transition:.55s ease}
+    .event-card.show{opacity:1;transform:none}.event-card .event-label{color:#ffb7c0;font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.event-card h3{margin:7px 0 5px;font-size:17px}.event-card p{margin:0;color:rgba(255,255,255,.67);font-size:12px;line-height:1.4}
+    .doc-stack{position:absolute;right:24px;top:188px;width:150px;height:170px;z-index:2;opacity:0;transform:translateX(18px);transition:.6s ease}.doc-stack.show{opacity:1;transform:none}
+    .doc{position:absolute;width:122px;height:152px;padding:13px 10px;border-radius:8px;background:#fff;color:#1e2935;box-shadow:0 14px 34px rgba(0,0,0,.28);font-size:10px;font-weight:900}.doc:after{content:"";position:absolute;left:10px;right:10px;top:42px;height:72px;background:repeating-linear-gradient(180deg,#e3e8ed 0 4px,transparent 4px 12px)}
+    .doc.one{right:16px;top:11px;transform:rotate(5deg)}.doc.two{right:26px;top:3px;transform:rotate(-4deg)}.doc.three{right:22px;top:0}.doc em{display:block;margin-top:5px;color:var(--red);font-size:9px;font-style:normal}
+    .completion{position:absolute;inset:0;z-index:20;display:grid;place-items:center;text-align:center;color:#fff;background:linear-gradient(145deg,rgba(130,8,28,.97),rgba(200,16,46,.97));opacity:0;pointer-events:none;transition:1s ease}.completion.show{opacity:1}
+    .completion .ring{width:98px;height:98px;margin:auto;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(255,255,255,.65);box-shadow:0 0 0 13px rgba(255,255,255,.1);font-size:52px;font-weight:900}
+    .completion h2{margin:28px 0 8px;font-size:42px;letter-spacing:-.05em}.completion p{margin:0;color:rgba(255,255,255,.76);font-size:16px}.completion .final-logo{margin-top:31px;font-size:28px;font-weight:900;letter-spacing:.15em}
+    .timeline{position:absolute;left:4vw;right:4vw;bottom:22px;height:28px;display:flex;align-items:center;gap:14px}
+    .timeline button{width:30px;height:30px;border:0;border-radius:50%;background:#fff;box-shadow:0 5px 16px rgba(31,42,55,.16);color:var(--red);font-size:13px;font-weight:900;cursor:pointer}
+    .timeline-track{position:relative;flex:1;height:5px;border-radius:999px;background:rgba(16,23,34,.12);overflow:hidden}.timeline-fill{width:0;height:100%;border-radius:inherit;background:var(--red)}
+    .timeline span{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.08em}
+    .hint{position:absolute;right:4vw;top:88px;color:rgba(101,112,131,.68);font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+    @media(max-width:900px){.workspace{grid-template-columns:1fr;top:92px;bottom:62px}.visual-panel{display:none}.topbar{height:68px}.logo{height:68px;width:120px;font-size:24px}.logo:after{height:68px}.title{margin-left:50px;font-size:15px}.check-head{height:84px}.item{min-height:49px}.hint{display:none}}
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <div class="blueprint"></div>
+    <div class="ambient"></div>
+    <header class="topbar">
+      <div class="logo">JRM</div>
+      <div class="title">TCO Checklist <span>Managing the path to project completion</span></div>
+      <div class="timecode" id="timecode">00:00 / 00:25</div>
+      <div class="red-rule"></div>
+    </header>
+    <div class="hint">25-second animated overview</div>
+
+    <section class="workspace">
+      <article class="panel visual-panel">
+        <div class="city">
+          <div class="tower one"></div><div class="tower two"></div><div class="tower three"></div><div class="tower four"></div>
+          <div class="site-line"></div><div class="scan"></div>
+        </div>
+        <div class="event-card" id="eventCard">
+          <div class="event-label" id="eventLabel">Centralized management</div>
+          <h3 id="eventTitle">One checklist. Clear ownership.</h3>
+          <p id="eventText">Every requirement stays visible, assigned, and moving toward occupancy.</p>
+        </div>
+        <div class="doc-stack" id="docStack"><div class="doc one">TR-3<em>Concrete testing</em></div><div class="doc two">TR-1<em>Inspection statement</em></div><div class="doc three">DOB SIGN-OFF<em>Submitted and tracked</em></div></div>
+        <div class="scene-copy">
+          <div class="eyebrow"><i></i><span id="sceneKicker">Project closeout control</span></div>
+          <h1 id="sceneTitle">The path to occupancy is managed.</h1>
+          <p id="sceneText">A disciplined TCO process keeps every inspection, approval, and life safety item moving toward completion.</p>
+          <div class="scene-badge"><b></b><span id="sceneBadge">Live coordination in progress</span></div>
+        </div>
+      </article>
+
+      <article class="panel check-panel">
+        <div class="check-head">
+          <div class="check-icon">&#10003;</div>
+          <div><h2>Temporary Certificate of Occupancy</h2><p>Centralized closeout checklist | Public assembly readiness</p></div>
+          <div class="progress-wrap"><b id="progressText">0%</b><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div></div>
+        </div>
+        <div class="checklist" id="checklist"></div>
+      </article>
+    </section>
+
+    <section class="completion" id="completion">
+      <div>
+        <div class="ring">&#10003;</div>
+        <h2>Ready for Occupancy</h2>
+        <p>Every requirement tracked. Every approval confirmed.</p>
+        <div class="final-logo">JRM CONSTRUCTION MANAGEMENT</div>
+      </div>
+    </section>
+
+    <footer class="timeline">
+      <button id="toggle" aria-label="Pause animation">&#10074;&#10074;</button>
+      <button id="replay" aria-label="Replay animation">&#8634;</button>
+      <div class="timeline-track"><div class="timeline-fill" id="timelineFill"></div></div>
+      <span id="elapsed">00:00</span>
+    </footer>
+  </main>
+
+  <script>
+    const duration=25000;
+    const items=[
+      ['Life Safety Sign-Offs','Fire alarm, sprinkler, and readiness verification'],
+      ['DOB Construction Inspection','Walkthrough preparation, inspection, and sign-off'],
+      ['Emergency Lighting','Testing, field validation, and completion tracking'],
+      ['Plumbing Sign-Off','Trade coordination and approval documentation'],
+      ['Exit Signs / Paths of Egress','Final pathway, signage, and occupant-safety checks'],
+      ['TR-1s / TR-3s','Required forms reviewed, submitted, and tracked']
+    ];
+    const scenes=[
+      {at:0,kicker:'Project closeout control',title:'The path to occupancy is managed.',text:'A disciplined TCO process keeps every inspection, approval, and life safety item moving toward completion.',badge:'Live coordination in progress',event:['Centralized management','One checklist. Clear ownership.','Every requirement stays visible, assigned, and moving toward occupancy.'],active:0,done:0},
+      {at:3500,kicker:'Life safety sign-offs',title:'Critical systems are verified first.',text:'Fire alarm and sprinkler teams coordinate testing, documentation, and inspection readiness.',badge:'Life safety review active',event:['Life safety coordination','Fire alarm and sprinkler systems','Inspection readiness is verified before the building moves forward.'],active:0,done:0},
+      {at:7000,kicker:'DOB construction inspections',title:'Inspection day stays controlled.',text:'Walkthroughs, open items, and supporting documentation are aligned before the DOB team arrives.',badge:'DOB inspection underway',event:['DOB inspection','Walkthrough and documentation','Field teams track each required sign-off in real time.'],active:1,done:1},
+      {at:11000,kicker:'Trade systems coordination',title:'Every discipline moves together.',text:'Plumbing and emergency lighting approvals are managed alongside the broader closeout plan.',badge:'Trade approvals progressing',event:['Trade sign-offs','Plumbing and emergency lighting','Owners, dates, and dependencies remain visible to the full team.'],active:3,done:3},
+      {at:15000,kicker:'Exit paths and egress',title:'Safety is confirmed in the final details.',text:'Exit signs, pathways, and egress requirements are checked with the same level of discipline.',badge:'Egress checks complete',event:['Egress compliance','Exit signs and pathways','Final occupant-safety checks are completed and documented.'],active:4,done:4},
+      {at:18500,kicker:'Documentation and tracking',title:'TR-1s and TR-3s close the loop.',text:'Required documents are reviewed, submitted, and tracked through final approval.',badge:'Documentation submitted',event:['Document control','TR-1s / TR-3s','Approvals and supporting forms are organized for completion.'],active:5,done:5,docs:true},
+      {at:22000,kicker:'Real-time progress monitoring',title:'Every requirement is accounted for.',text:'Visibility, accountability, and clear ownership drive the project confidently toward occupancy.',badge:'All requirements complete',event:['Completion confirmed','TCO checklist complete','The project is ready for successful closeout.'],active:-1,done:6,complete:true}
+    ];
+    const checklist=document.getElementById('checklist');
+    checklist.innerHTML=items.map((item,i)=>`<div class="item" id="item-${i}"><div class="mark">&#10003;</div><div><strong>${item[0]}</strong><small>${item[1]}</small></div><div class="status">Pending</div></div>`).join('');
+    let started=performance.now(),pausedAt=0,pauseStarted=0,paused=false;
+    const $=id=>document.getElementById(id);
+    function setText(id,value){$(id).textContent=value}
+    function format(ms){const seconds=Math.max(0,Math.floor(ms/1000));return `00:${String(seconds).padStart(2,'0')}`}
+    function updateScene(now){
+      let elapsed=paused?(pauseStarted-started-pausedAt):(now-started-pausedAt);
+      elapsed=Math.min(duration,Math.max(0,elapsed));
+      const scene=[...scenes].reverse().find(s=>elapsed>=s.at)||scenes[0];
+      setText('sceneKicker',scene.kicker);setText('sceneTitle',scene.title);setText('sceneText',scene.text);setText('sceneBadge',scene.badge);
+      setText('eventLabel',scene.event[0]);setText('eventTitle',scene.event[1]);setText('eventText',scene.event[2]);
+      $('eventCard').classList.toggle('show',elapsed>1200&&elapsed<22400);
+      $('docStack').classList.toggle('show',!!scene.docs);
+      $('completion').classList.toggle('show',elapsed>=23800);
+      items.forEach((_,i)=>{
+        const item=$(`item-${i}`),status=item.querySelector('.status');
+        item.classList.toggle('done',i<scene.done);
+        item.classList.toggle('active',i===scene.active);
+        status.textContent=i<scene.done?'Complete':i===scene.active?'In progress':'Pending';
+      });
+      const progress=Math.round((scene.done+(scene.active>=0?.45:0))/items.length*100);
+      setText('progressText',`${progress}%`);$('progressFill').style.width=`${progress}%`;
+      $('timelineFill').style.width=`${elapsed/duration*100}%`;
+      setText('elapsed',format(elapsed));setText('timecode',`${format(elapsed)} / 00:25`);
+      if(elapsed<duration)requestAnimationFrame(updateScene);
+    }
+    $('toggle').onclick=()=>{
+      paused=!paused;
+      if(paused){pauseStarted=performance.now();$('toggle').innerHTML='&#9654;'}
+      else{pausedAt+=performance.now()-pauseStarted;$('toggle').innerHTML='&#10074;&#10074;';requestAnimationFrame(updateScene)}
+    };
+    $('replay').onclick=()=>{started=performance.now();pausedAt=0;pauseStarted=0;paused=false;$('toggle').innerHTML='&#10074;&#10074;';requestAnimationFrame(updateScene)};
+    requestAnimationFrame(updateScene);
+  </script>
+</body>
+</html>
